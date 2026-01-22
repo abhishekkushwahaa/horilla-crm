@@ -1,3 +1,14 @@
+"""Mixin classes for Django views and forms.
+
+This module provides reusable mixin classes that can be added to Django views,
+forms, and filtersets to add common functionality:
+
+- CompanyFilterMixin: Filters querysets by active company
+- FiscalYearCalendarMixin: Generates fiscal year calendar data with custom configurations
+- OwnerQuerysetMixin: Restricts User field querysets based on permissions and role hierarchy
+- OwnerFiltersetMixin: Restricts User filter querysets based on permissions and role hierarchy
+"""
+
 import calendar as cal_module
 from calendar import monthcalendar
 from datetime import datetime, timedelta

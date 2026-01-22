@@ -1,3 +1,12 @@
+"""Celery tasks for scheduled data exports and cleanup operations.
+
+This module provides background tasks for:
+- Processing scheduled exports based on frequency (daily, weekly, monthly, yearly)
+- Generating export files in multiple formats (CSV, XLSX, PDF)
+- Sending export files via email
+- Cleaning up expired export schedules
+"""
+
 # Standard library imports
 import csv
 import io

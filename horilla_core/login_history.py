@@ -1,3 +1,13 @@
+"""Helper functions for LoginHistory model display and formatting.
+
+This module provides utility functions that are attached to the LoginHistory model
+to enhance its display capabilities. These functions handle:
+- User status display (Login/Logout)
+- User agent string truncation
+- Date-time formatting
+- Login/logout icon rendering
+"""
+
 from django.utils.html import format_html
 from django.utils.timezone import localtime
 from login_history.models import LoginHistory
@@ -5,7 +15,7 @@ from login_history.models import LoginHistory
 
 def user_status(self):
     """Return 'Login' or 'Logout' based on is_logged_in status."""
-    if self.is_logged_in == True:
+    if self.is_logged_in is True:
         return "Login"
     return "Logout"
 
