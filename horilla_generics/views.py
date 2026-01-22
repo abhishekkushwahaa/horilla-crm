@@ -12,6 +12,7 @@ import inspect
 import json
 import logging
 import re
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 # Standard library
@@ -71,6 +72,7 @@ from reportlab.pdfgen import canvas
 
 # First-party (Horilla)
 from horilla.exceptions import HorillaHttp404
+from horilla.utils.choices import FIELD_TYPE_MAP, TABLE_FALLBACK_FIELD_TYPES
 from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.mixins import OwnerQuerysetMixin
 from horilla_core.models import (
@@ -149,6 +151,7 @@ class HorillaNavView(TemplateView):
         """Return additional attributes for navbar indication when enabled."""
         if self.navbar_indication:
             return self.navbar_indication_attrs
+        return None
 
     def get_default_view_type(self):
         """Return the pinned view_type if available, else 'all'."""
@@ -306,6 +309,7 @@ class HorillaListView(ListView):
     owner_filtration = True
     sorting_target = None
     exclude_columns_from_sorting = []
+    no_found_img: str = ""
 
     def __init__(self, **kwargs):
         self._model_fields_cache = None
@@ -687,9 +691,7 @@ class HorillaListView(ListView):
         try:
             return queryset.order_by(order_field)
         except Exception as e:
-            import logging
 
-            logger = logging.getLogger(__name__)
             logger.warning("Could not sort by field '%s': %s", mapped_field, str(e))
             return queryset
 
@@ -707,18 +709,6 @@ class HorillaListView(ListView):
         """Extract model fields with metadata for filtering UI."""
         if self._model_fields_cache is not None:
             return self._model_fields_cache
-
-        FIELD_TYPE_MAP = {
-            "CharField": "text",
-            "TextField": "text",
-            "BooleanField": "boolean",
-            "IntegerField": "number",
-            "FloatField": "float",
-            "DecimalField": "decimal",
-            "ForeignKey": "foreignkey",
-            "DateField": "date",
-            "DateTimeField": "datetime",
-        }
 
         BOOLEAN_CHOICES = [
             {"value": "True", "label": "Yes"},
@@ -1995,6 +1985,7 @@ class HorillaListView(ListView):
                 response.write(buffer.getvalue())
                 buffer.close()
                 return response
+            return None
 
         except Exception as e:
             return HttpResponse(f"Export failed: {str(e)}", status=500)
@@ -2027,11 +2018,9 @@ class HorillaListView(ListView):
                     elif field_type in ("number", "integer"):
                         new_value = int(new_value)
                     elif field_type in ("float", "decimal"):
-                        from decimal import Decimal
 
                         new_value = Decimal(new_value)
                     elif field_type in ("date", "datetime"):
-                        from datetime import datetime
 
                         format = (
                             "%Y-%m-%d" if field_type == "date" else "%Y-%m-%dT%H:%M"
@@ -2327,6 +2316,7 @@ class HorillaListView(ListView):
         context["no_record_add_button"] = self.no_record_add_button or {}
         context["no_record_section"] = self.no_record_section
         context["no_record_msg"] = self.no_record_msg
+        context["no_found_img"] = self.no_found_img
         context["bulk_update_two_column"] = self.bulk_update_two_column
         header_attrs_dict = {}
         for item in self.header_attrs:
@@ -3271,9 +3261,7 @@ class HorillaKanbanView(HorillaListView):
                 render_to_string("partials/kanban_items.html", context, request=request)
             )
         except Exception as e:
-            import logging
 
-            logger = logging.getLogger(__name__)
             logger.error("Load more items failed: %s", str(e))
             return HttpResponse(status=500, content=f"Error: {str(e)}")
 
@@ -3341,7 +3329,7 @@ class HorillaDetailView(DetailView):
                     elif v == user:
                         is_owner = True
                         break
-            except:
+            except Exception:
                 pass
 
         own_view_perm = f"{app}.view_own_{model}"
@@ -3475,7 +3463,7 @@ class HorillaDetailView(DetailView):
             order_field = None
             try:
                 order_field = related_model._meta.get_field("order")
-            except:
+            except Exception:
                 pass
             queryset = related_model.objects.all()
             if order_field:
@@ -3650,7 +3638,7 @@ class HorillaDetailView(DetailView):
                                 label = label[: -len(suffix)]
                                 break
                         breadcrumbs.append((label, referer))
-                except:
+                except Exception:
                     breadcrumbs.append(("Back", referer))
 
             dynamic_breadcrumbs = breadcrumbs.copy()
@@ -4447,9 +4435,7 @@ class HorillaRelatedListSectionView(DetailView):
                 "is_custom": True,
             }
         except Exception as e:
-            import logging
 
-            logger = logging.getLogger(__name__)
             logger.error(
                 "Error building custom related list %s: %s",
                 custom_name,
@@ -5202,7 +5188,7 @@ class HorillaMultiStepFormView(FormView):
                     # Check if user has ANY of the specified permissions
                     if any(self.request.user.has_perm(perm) for perm in permissions):
                         filtered_fields.append(field_name)
-            except:
+            except Exception:
                 pass
 
         return filtered_fields
@@ -5643,7 +5629,7 @@ class HorillaMultiStepFormView(FormView):
                             continue
                         except (ValueError, TypeError, InvalidOperation):
                             pass
-                    except:
+                    except Exception:
                         pass
                     form_data[key] = post_data[key]
 
@@ -5727,6 +5713,7 @@ class HorillaMultiStepFormView(FormView):
             action = _("Update") if self.object else _("Create")
             verbose = self.model._meta.verbose_name
             return f"{action} {verbose}"
+        return action
 
     def get_context_data(self, **kwargs):
         """Provide context for multi-step forms including navigation and titles."""
@@ -5778,7 +5765,7 @@ class HorillaMultiStepFormView(FormView):
                             "verbose_name": related_model._meta.verbose_name.title(),
                             "permission": permission_str,
                         }
-                except:
+                except Exception:
                     pass
         context["related_models_info"] = related_models_info
 
@@ -6249,7 +6236,7 @@ class HorillaSingleFormView(FormView):
                     # Check if user has ANY of the specified permissions
                     if any(self.request.user.has_perm(perm) for perm in permissions):
                         filtered_fields.append(field_name)
-            except:
+            except Exception:
                 pass
 
         return filtered_fields
@@ -6490,7 +6477,7 @@ class HorillaSingleFormView(FormView):
                             if row_id not in condition_data:
                                 condition_data[row_id] = {}
                             condition_data[row_id][field_name] = value
-                        except:
+                        except Exception:
                             continue
         return condition_data
 
@@ -6767,7 +6754,7 @@ class HorillaSingleFormView(FormView):
                                     is_mandatory = (
                                         not model_field.null and not model_field.blank
                                     )
-                                except:
+                                except Exception:
                                     # If we can't get the model field, check form field's required attribute
                                     is_mandatory = field.required
 
@@ -6789,7 +6776,7 @@ class HorillaSingleFormView(FormView):
                                 is_mandatory = (
                                     not model_field.null and not model_field.blank
                                 )
-                            except:
+                            except Exception:
                                 # If we can't get the model field, check form field's required attribute
                                 is_mandatory = field.required
 
@@ -6827,7 +6814,7 @@ class HorillaSingleFormView(FormView):
                             is_mandatory = (
                                 not model_field.null and not model_field.blank
                             )
-                        except:
+                        except Exception:
                             # If we can't get the model field, check form field's required attribute
                             is_mandatory = field.required
 
@@ -6868,7 +6855,7 @@ class HorillaSingleFormView(FormView):
                         # Get the model field to determine the actual field type
                         try:
                             model_field = self._meta.model._meta.get_field(field_name)
-                        except:
+                        except Exception:
                             model_field = None
 
                         # Check if field has choices (CharField with choices renders as Select)
@@ -7008,7 +6995,7 @@ class HorillaSingleFormView(FormView):
                                     model_field = self._meta.model._meta.get_field(
                                         field_name
                                     )
-                                except:
+                                except Exception:
                                     # Field might not exist in model (could be a property)
                                     continue
 
@@ -7062,10 +7049,6 @@ class HorillaSingleFormView(FormView):
                                 # If value was changed, restore original and add validation error
                                 if value_changed:
                                     cleaned_data[field_name] = original_value
-                                    from django.utils.translation import (
-                                        gettext_lazy as _,
-                                    )
-
                                     self.add_error(
                                         field_name,
                                         forms.ValidationError(
@@ -7139,10 +7122,7 @@ class HorillaSingleFormView(FormView):
                     if field_value is not None:
                         if (
                             field.get_internal_type()
-                            in [
-                                "CharField",
-                                "TextField",
-                            ]
+                            in TABLE_FALLBACK_FIELD_TYPES[:2]  # [CharField, TextField]
                             and not isinstance(
                                 field,
                                 (models.EmailField, models.URLField, models.SlugField),
@@ -7187,9 +7167,11 @@ class HorillaSingleFormView(FormView):
         context["view_id"] = self.view_id
         context["form_class_name"] = self.get_form_class().__name__
         context["model_name"] = (
-            self.model._meta.model_name if self.model != None else ""
+            self.model._meta.model_name if self.model is not None else ""
         )
-        context["app_label"] = self.model._meta.app_label if self.model != None else ""
+        context["app_label"] = (
+            self.model._meta.app_label if self.model is not None else ""
+        )
         context["submitted_condition_data"] = self.get_submitted_condition_data()
 
         # Add existing conditions to context if in edit mode
@@ -7315,7 +7297,7 @@ class HorillaSingleFormView(FormView):
                             "verbose_name": related_model._meta.verbose_name.title(),
                             "permission": permission_str,  # Add this line
                         }
-                except:
+                except Exception:
                     pass
 
         query_string = ""
@@ -7659,8 +7641,6 @@ class HorillaSingleFormView(FormView):
         """
         if not self.condition_fields:
             return None
-
-        from django.http import QueryDict
 
         params = QueryDict(mutable=True)
         params["add_condition_row"] = "1"
@@ -8016,11 +7996,6 @@ class HorillaDynamicCreateView(LoginRequiredMixin, FormView):
             context["full_width_fields"] = self.get_full_width_fields()
 
             # Add field permissions to context
-            from horilla_core.utils import (
-                filter_hidden_fields,
-                get_field_permissions_for_model,
-            )
-
             field_permissions = get_field_permissions_for_model(
                 self.request.user, self.target_model
             )
@@ -8036,11 +8011,6 @@ class HorillaDynamicCreateView(LoginRequiredMixin, FormView):
 
         # Add field permissions to form kwargs
         if self.target_model:
-            from horilla_core.utils import (
-                filter_hidden_fields,
-                get_field_permissions_for_model,
-            )
-
             field_permissions = get_field_permissions_for_model(
                 self.request.user, self.target_model
             )
@@ -8746,7 +8716,6 @@ class HorillaSingleDeleteView(DeleteView):
                     messages.success(request, self.get_success_message())
                     return self.get_post_delete_response()
                 except Exception as e:
-                    from django.utils.translation import gettext_lazy as _
 
                     logger.error(
                         "Simple delete error for %s id %s: %s",
@@ -9062,7 +9031,6 @@ class HorillaSingleDeleteView(DeleteView):
                     messages.success(request, self.get_success_message())
                     return self.get_post_delete_response()
                 except Exception as e:
-                    from django.utils.translation import gettext_lazy as _
 
                     logger.error(
                         "Simple delete error for %s id %s: %s",
