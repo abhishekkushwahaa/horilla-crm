@@ -73,6 +73,7 @@ class CustomerRoleNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_core:customer_role_create_form')}?new=true""",
                 "attrs": {"id": "customer-role-create"},
             }
+        return None
 
     @cached_property
     def actions(self):
@@ -91,6 +92,7 @@ class CustomerRoleNavbar(LoginRequiredMixin, HorillaNavView):
                             """,
                 }
             ]
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")

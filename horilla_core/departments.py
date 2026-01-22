@@ -69,6 +69,7 @@ class DepartmentNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_core:department_create_form')}?new=true""",
                 "attrs": {"id": "department-create"},
             }
+        return None
 
     @cached_property
     def actions(self):
@@ -87,6 +88,7 @@ class DepartmentNavbar(LoginRequiredMixin, HorillaNavView):
                             """,
                 }
             ]
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")

@@ -40,6 +40,7 @@ from django.views.generic import TemplateView, View
 # First-party (Horilla)
 from horilla.exceptions import HorillaHttp404
 from horilla.registry.feature import FEATURE_REGISTRY
+from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
 from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.models import ImportHistory
 from horilla_generics.views import HorillaListView, HorillaTabView
@@ -175,12 +176,6 @@ class ImportDataView(TemplateView):
 )
 class ImportStep1View(View):
     """Handle file upload and module selection"""
-
-    def get(self, request, *args, **kwargs):
-        """Handle navigation back to step 2"""
-        import_data = request.session.get("import_data", {})
-        if not import_data:
-            return redirect("horilla_core:import_data")
 
     def post(self, request, *args, **kwargs):
         """Handle file upload and module selection"""
@@ -790,7 +785,6 @@ class ImportStep2View(View):
 
     def get_model_fields(self, module_name, app_label):
         """Get fields from the selected model with choice and foreign key info"""
-        from django.db.models import CharField, EmailField, ForeignKey, URLField
 
         try:
             model = apps.get_model(app_label, module_name)
@@ -1129,7 +1123,9 @@ class ImportStep2View(View):
                             }
                         )
 
-                elif field_type in ["CharField", "TextField"]:
+                elif (
+                    field_type in TABLE_FALLBACK_FIELD_TYPES[:2]
+                ):  # [CharField, TextField]
                     sample_values = [
                         v for v in file_values[:10] if v and str(v).strip()
                     ]
@@ -1278,7 +1274,7 @@ class ImportStep2View(View):
 
             parser.parse(str(value))
             return True
-        except:
+        except Exception:
             return False
 
     def is_valid_number(self, value, field_type):
@@ -1439,7 +1435,6 @@ class ImportStep3View(View):
 
     def get_model_fields(self, module_name, app_label):
         """Get fields from the selected model with choice and foreign key info"""
-        from django.db.models import CharField, ForeignKey
 
         try:
             model = apps.get_model(app_label, module_name)
@@ -2343,10 +2338,8 @@ class GetModelFieldsView(View):
                 if not value
             ]
             raise HorillaHttp404(f"Missing parameters: {', '.join(missing_params)}")
-            # return HttpResponse(f'<div class="text-xs p-2 border text-red-500">Missing parameters: {", ".join(missing_params)}</div>')
 
         try:
-            from django.db.models import CharField, ForeignKey
 
             model = apps.get_model(app_label, module)
             field = next((f for f in model._meta.fields if f.name == field_name), None)
@@ -2459,7 +2452,6 @@ class GetUniqueValuesView(View):
             raise HorillaHttp404(f"Missing parameters: {', '.join(missing_params)}")
 
         try:
-            from django.db.models import CharField, ForeignKey
 
             model = apps.get_model(app_label, module)
             field = next((f for f in model._meta.fields if f.name == field_name), None)

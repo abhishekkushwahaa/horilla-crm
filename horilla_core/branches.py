@@ -76,6 +76,7 @@ class BranchNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_core:create_company_multi_step')}?new=true""",
                 "attrs": {"id": "branch-create"},
             }
+        return None
 
     @cached_property
     def actions(self):
@@ -96,6 +97,7 @@ class BranchNavbar(LoginRequiredMixin, HorillaNavView):
                             """,
                 }
             ]
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")

@@ -71,6 +71,7 @@ class PartnerRoleNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_core:partner_role_create_form')}?new=true""",
                 "attrs": {"id": "partner-role-create"},
             }
+        return None
 
     @cached_property
     def actions(self):
@@ -89,6 +90,7 @@ class PartnerRoleNavbar(LoginRequiredMixin, HorillaNavView):
                             """,
                 }
             ]
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")

@@ -71,6 +71,7 @@ class TeamRoleNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_core:team_role_create_form')}?new=true""",
                 "attrs": {"id": "team-role-create"},
             }
+        return None
 
     @cached_property
     def actions(self):
@@ -89,6 +90,7 @@ class TeamRoleNavbar(LoginRequiredMixin, HorillaNavView):
                             """,
                 }
             ]
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")

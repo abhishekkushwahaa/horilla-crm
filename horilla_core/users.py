@@ -81,6 +81,7 @@ class UserNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_core:user_create_form')}?new=true""",
                 "attrs": {"id": "user-create"},
             }
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -117,6 +118,7 @@ class UserListView(LoginRequiredMixin, HorillaListView):
                 "url": f"""{ reverse_lazy('horilla_core:user_create_form')}?new=true""",
                 "attrs": 'id="user-create"',
             }
+        return None
 
     bulk_update_fields = [
         "department",

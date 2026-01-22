@@ -201,14 +201,14 @@ class ModelFieldsModalView(LoginRequiredMixin, TemplateView):
         if role_id:
             try:
                 role = get_object_or_404(Role, id=role_id)
-            except:
+            except Exception:
                 messages.error(request, _("Role does not exist"))
                 return HttpResponse("<script>$('#reloadButton').click();</script>")
 
         if user_id:
             try:
                 user = get_object_or_404(User, id=user_id)
-            except:
+            except Exception:
                 messages.error(request, _("User does not exist"))
                 return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -508,6 +508,9 @@ class UpdateFieldPermissionView(LoginRequiredMixin, View):
                 request,
                 f"Field permission for '{field_name}' {action} successfully for {target_name}",
             )
+            return JsonResponse(
+                {"success": True, "message": "Field permission updated successfully"}
+            )
 
         except Exception as e:
             return JsonResponse(
@@ -709,7 +712,7 @@ class RolePermissionsView(LoginRequiredMixin, TemplateView):
         role_id = kwargs.get("role_id")
         try:
             _role = get_object_or_404(Role, id=role_id)
-        except:
+        except Exception:
             messages.error(request, _("Role does not exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -753,7 +756,7 @@ class SearchRoleModelsView(LoginRequiredMixin, TemplateView):
     def get(self, request, role_id, *args, **kwargs):
         try:
             role = get_object_or_404(Role, id=role_id)
-        except:
+        except Exception:
             messages.error(request, _("Role does not exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -790,7 +793,7 @@ class SearchUserModelsView(LoginRequiredMixin, TemplateView):
     def get(self, request, user_id, *args, **kwargs):
         try:
             user = get_object_or_404(User, id=user_id)
-        except:
+        except Exception:
             messages.error(request, _("User does not exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -859,7 +862,7 @@ class RoleMembersView(LoginRequiredMixin, TemplateView):
         role_id = kwargs.get("role_id")
         try:
             _role = get_object_or_404(Role, id=role_id)
-        except:
+        except Exception:
             messages.error(request, _("Role does not exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -982,7 +985,7 @@ class UpdateUserPermissionsView(LoginRequiredMixin, View):
         """Toggle permission for a specific user."""
         try:
             user = get_object_or_404(User, id=user_id)
-        except:
+        except Exception:
             messages.error(request, _("User does not exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -1036,7 +1039,7 @@ class LoadUserPermissionsView(LoginRequiredMixin, TemplateView):
         """Load permissions for a specific user."""
         try:
             user = get_object_or_404(User, id=user_id)
-        except:
+        except Exception:
             messages.error(self.request, _("User Does not Exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
         context = {
@@ -1239,7 +1242,7 @@ class UpdateRoleModelPermissionsView(LoginRequiredMixin, View):
         """Toggle all permissions for a specific model for a role."""
         try:
             role = get_object_or_404(Role, id=role_id)
-        except:
+        except Exception:
             messages.error(self.request, _("Role Does not Exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -1304,7 +1307,7 @@ class UpdateRoleAllPermissionsView(LoginRequiredMixin, View):
         """Toggle ALL permissions for a role."""
         try:
             role = get_object_or_404(Role, id=role_id)
-        except:
+        except Exception:
             messages.error(self.request, _("Role Does not Exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
         checked = request.POST.get("checked") == "true"
@@ -1371,7 +1374,7 @@ class UpdateUserModelPermissionsView(LoginRequiredMixin, View):
         """Toggle all permissions for a specific model for a user."""
         try:
             user = get_object_or_404(User, id=user_id)
-        except:
+        except Exception:
             messages.error(self.request, _("User Does not Exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -1438,7 +1441,7 @@ class UpdateUserAllPermissionsView(LoginRequiredMixin, View):
         """Toggle ALL permissions for a user."""
         try:
             user = get_object_or_404(User, id=user_id)
-        except:
+        except Exception:
             messages.error(self.request, _("User Does not Exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 
@@ -1676,7 +1679,7 @@ class ToggleSuperuserView(LoginRequiredMixin, View):
         user_id = kwargs.get("pk")
         try:
             user = get_object_or_404(User, pk=user_id)
-        except:
+        except Exception:
             messages.error(self.request, _("User Does not Exist"))
             return HttpResponse("<script>$('#reloadButton').click();</script>")
 

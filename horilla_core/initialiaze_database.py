@@ -144,8 +144,7 @@ class SignUpFormView(HorillaSingleFormView, ProgressStepsMixin):
     modal_height = False
     current_step = 3
     skip_permission_check = True
-    html = """
-        {% load i18n static %}
+    html = """{% load i18n static %}
         <div class="flex justify-end pt-5">
             <button class="border-[1px] border-[solid] border-[#e54f38] hover:border-[#9b210f] hover:bg-secondary-600 rounded-[5px] px-[15px] py-[8px] text-[#e54f38] flex gap-3 btn-with-icon border-[#e54f38] [transition:.3s] hover:text-[white]">
                 {% trans "Next" %}
@@ -155,6 +154,12 @@ class SignUpFormView(HorillaSingleFormView, ProgressStepsMixin):
     """
 
     def get_button_html(self):
+        """
+        Render and return the HTML template for the form button.
+
+        Returns:
+            str: Rendered HTML string for the button element.
+        """
         t = Template(self.html)
         return t.render(Context({}))
 
@@ -201,8 +206,7 @@ class InitializeCompanyFormView(
     header = False
     modal_height = False
     skip_permission_check = True
-    html = """
-        {% load i18n static %}
+    html = """{% load i18n static %}
         <div class="flex justify-end pt-5">
             <button class="border-[1px] border-[solid] border-[#e54f38] hover:border-[#9b210f] hover:bg-secondary-600 rounded-[5px] px-[15px] py-[8px] text-[#e54f38] flex gap-3 btn-with-icon border-[#e54f38] [transition:.3s] hover:text-[white]">
                 {% trans "Next" %}
@@ -212,6 +216,12 @@ class InitializeCompanyFormView(
     """
 
     def get_button_html(self):
+        """
+        Render and return the HTML template for the form button.
+
+        Returns:
+            str: Rendered HTML string for the button element.
+        """
         t = Template(self.html)
         return t.render(Context({}))
 
@@ -237,7 +247,6 @@ class InitializeCompanyFormView(
             reverse_lazy("horilla_core:initialize_database_role")
         )
         return response
-        return
 
 
 @method_decorator(csrf_exempt, name="dispatch")

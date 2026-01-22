@@ -237,7 +237,8 @@ class Company(models.Model):
         Fixed save method to prevent recursion and handle currency changes.
         """
         if hasattr(self, "_saving"):
-            return super().save(*args, **kwargs)
+            super().save(*args, **kwargs)
+            return None
 
         self._saving = True
         try:
@@ -272,6 +273,8 @@ class Company(models.Model):
                     self._handle_currency_change(self.currency)
                     self.currency = default_currency.currency
                     super().save(*args, **kwargs)
+
+            return None
 
         except Exception as e:
             logger.error("Error saving company %s: %s", self.pk, e)
@@ -694,6 +697,7 @@ class MultipleCurrency(HorillaCoreModel):
                     self.company.currency = self.currency
 
             super().save(*args, **kwargs)
+            return None
 
         finally:
             del self._saving
@@ -1787,7 +1791,7 @@ class FiscalYearInstance(HorillaCoreModel):
     is_current = models.BooleanField(default=False, verbose_name=_("Is Current"))
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     class Meta:
         """
@@ -2132,7 +2136,7 @@ class Holiday(HorillaCoreModel):
         ordering = ["-start_date"]
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def clean(self):
         """
@@ -2841,6 +2845,7 @@ class RecycleBin(models.Model):
 
         if "__str__" in data and data["__str__"]:
             return data["__str__"]
+        return None
 
     def get_delete_url(self):
         """
@@ -2862,7 +2867,7 @@ class RecycleBin(models.Model):
         data = {}
         try:
             data["__str__"] = str(obj)
-        except:
+        except Exception:
             data["__str__"] = None
 
         for field in obj._meta.fields:
@@ -3231,7 +3236,7 @@ class HorillaAttachment(HorillaCoreModel):
         """
         Returns a human-readable string representation of the attachment.
         """
-        return self.title
+        return str(self.title)
 
     def get_detail_view_url(self):
         """
