@@ -6,12 +6,16 @@ conditions, main forecasts, targets, individual user targets, and historical tra
 """
 
 from django.conf import settings
+
+# Third party imports (Django)
 from django.db import models
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
 from horilla.registry.permission_registry import permission_exempt_model
 from horilla.utils.choices import OPERATOR_CHOICES
+
+# First party / Horilla imports
 from horilla_core.models import (
     FiscalYearInstance,
     HorillaCoreModel,
@@ -423,7 +427,7 @@ class Forecast(HorillaCoreModel):
         """
         from horilla_crm.forecast.utils import ForecastCalculator
 
-        calculator = ForecastCalculator()
+        ForecastCalculator()
 
     def save(self, *args, **kwargs):
         if not self.pk:

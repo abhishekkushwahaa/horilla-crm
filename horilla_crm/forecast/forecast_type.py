@@ -5,9 +5,12 @@ Includes views for listing, creating, updating, and deleting
 forecast types and their associated conditions.
 """
 
+# Standard library imports
 from functools import cached_property
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+
+# Third-party imports (Django)
 from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -17,6 +20,8 @@ from horilla_core.decorators import (
     permission_required,
     permission_required_or_denied,
 )
+
+# First-party / Horilla imports
 from horilla_crm.forecast.filters import ForecastTypeFilter
 from horilla_crm.forecast.forms import ForecastTypeForm
 from horilla_crm.forecast.models import ForecastCondition, ForecastType

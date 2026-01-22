@@ -14,8 +14,10 @@ Features:
 - Caches condition queries for efficiency.
 """
 
+# Third party imports (Django)
 from django.db.models import Q, Sum
 
+# First party / Horilla imports
 from horilla.auth.models import User
 from horilla_core.models import FiscalYearInstance, Period
 from horilla_crm.forecast.models import Forecast, ForecastTarget, ForecastType
@@ -249,12 +251,11 @@ class ForecastCalculator:
             return self._calculate_quantity_values_from_data(
                 opportunities, forecast_type
             )
-        elif forecast_type.is_revenue_expected_based:
+        if forecast_type.is_revenue_expected_based:
             return self._calculate_expected_amount_values_from_data(
                 opportunities, forecast_type
             )
-        else:
-            return self._calculate_amount_values_from_data(opportunities, forecast_type)
+        return self._calculate_amount_values_from_data(opportunities, forecast_type)
 
     def _calculate_quantity_values_from_data(self, opportunities, forecast_type):
         """Calculate quantity values from opportunity data"""
@@ -372,7 +373,7 @@ class ForecastCalculator:
 
     def create_or_update_period_forecast(self, user, forecast_type, period):
         """Create or update forecast for a specific period automatically"""
-        forecast, created = Forecast.objects.get_or_create(
+        forecast, _created = Forecast.objects.get_or_create(
             company=getattr(user, "company", None),
             owner=user,
             forecast_type=forecast_type,
@@ -428,10 +429,9 @@ class ForecastCalculator:
 
         if forecast_type.is_quantity_based:
             return self._calculate_quantity_values(opportunities, forecast_type)
-        elif forecast_type.is_revenue_expected_based:
+        if forecast_type.is_revenue_expected_based:
             return self._calculate_expected_amount_values(opportunities, forecast_type)
-        else:
-            return self._calculate_amount_values(opportunities, forecast_type)
+        return self._calculate_amount_values(opportunities, forecast_type)
 
     def build_conditions_query(self, forecast_type):
         """Build Django Q object from horilla_crm.forecastCondition records"""
@@ -511,12 +511,11 @@ class ForecastCalculator:
 
         if operator in ["not_equals", "not_contains"]:
             return ~Q(**operator_map[operator.replace("not_", "")])
-        elif operator == "is_empty":
+        if operator == "is_empty":
             return Q(**{f"{field}__isnull": True}) | Q(**{field: ""})
-        elif operator == "is_not_empty":
+        if operator == "is_not_empty":
             return ~(Q(**{f"{field}__isnull": True}) | Q(**{field: ""}))
-        else:
-            return Q(**operator_map.get(operator, {field: value}))
+        return Q(**operator_map.get(operator, {field: value}))
 
     def convert_value(self, value, _field):
         """Convert string value to appropriate type based on field"""
@@ -665,8 +664,7 @@ class ForecastCalculator:
 
         if target_type == "quantity":
             return getattr(target, "quantity_target", 0) if target else 0
-        else:
-            return target.target_amount if target else 0
+        return target.target_amount if target else 0
 
     def bulk_generate_forecasts(self, users=None, periods=None):
         """Bulk generate forecasts for multiple users and periods"""
