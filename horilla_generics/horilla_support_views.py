@@ -1658,7 +1658,7 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
             # Get the field from the model
             try:
                 model_field = model._meta.get_field(field_name)
-            except:
+            except Exception:
                 return self._render_text_input(row_id, existing_value)
 
             # Determine widget type based on field type
@@ -1712,12 +1712,9 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
 
     def _render_text_input(self, row_id, existing_value=""):
         return f"""
-        <input type="text"
-               name="value_{row_id}"
-               id="id_value_{row_id}"
-               value="{existing_value}"
-               class="text-color-820 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md  focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
-               placeholder="Enter Value">
+        <input type="text" name="value_{row_id}"  id="id_value_{row_id}" value="{existing_value}" placeholder="Enter Value"
+            class="text-color-820 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md  focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+        >
         """
 
     def _render_select_input(self, choices, row_id, existing_value=""):
@@ -1728,13 +1725,7 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
                 f'<option value="{choice_value}" {selected}>{choice_label}</option>'
             )
 
-        return f"""
-        <select name="value_{row_id}"
-                id="id_value_{row_id}"
-                class="js-example-basic-single headselect">
-            {options}
-        </select>
-        """
+        return f"""<select name="value_{row_id}" id="id_value_{row_id}" class="js-example-basic-single headselect">{options}</select>"""
 
     def _render_boolean_input(self, row_id, existing_value=""):
         true_selected = "selected" if existing_value == "True" else ""

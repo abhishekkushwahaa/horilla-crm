@@ -7,6 +7,7 @@ templates, including attribute lookups, formatting utilities, and rendering help
 
 # Standard library imports
 import json as json_module
+import logging
 import re
 from datetime import date, datetime, time
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
@@ -32,6 +33,8 @@ from horilla.registry.asset_registry import get_registered_html, get_registered_
 from horilla_core.models import MultipleCurrency
 from horilla_core.utils import get_currency_display_value
 from horilla_utils.middlewares import _thread_local
+
+logger = logging.getLogger(__name__)
 
 register = template.Library()
 
@@ -388,7 +391,7 @@ def get_related_objects(obj, field_name):
         if hasattr(related_manager, "all"):
             return related_manager.all()
         return []
-    except:
+    except Exception:
         return []
 
 
@@ -440,7 +443,7 @@ def get_field_display(obj, field_name):
             return value.strftime("%d/%m/%Y")
 
         return str(value) if value is not None else ""
-    except:
+    except Exception:
         return str(getattr(obj, field_name, ""))
 
 
@@ -462,7 +465,7 @@ def get_add_url(obj, related_list):
     if add_url:
         try:
             return reverse(add_url) + f"?{obj._meta.model_name}={obj.pk}"
-        except:
+        except Exception:
             return add_url
     return ""
 
@@ -476,7 +479,7 @@ def get_view_all_url(obj, related_list):
     if view_all_url:
         try:
             return reverse(view_all_url) + f"?{obj._meta.model_name}={obj.pk}"
-        except:
+        except Exception:
             return view_all_url
     return ""
 
@@ -511,7 +514,7 @@ def verbose_name(obj, field_name):
     """
     try:
         return obj._meta.get_field(field_name).verbose_name
-    except:
+    except Exception:
         return field_name.replace("_", " ").title()
 
 
@@ -1038,7 +1041,6 @@ def get_app_labels_from_context(related_obj, request, action=None):
     Returns:
         list: Ordered list of app labels to try (most likely first)
     """
-    from django.apps import apps
 
     app_labels = []
     seen = set()  # To avoid duplicates while preserving order
@@ -1112,11 +1114,6 @@ def get_intermediate_instance(action, related_obj, request):
     Returns:
         The intermediate model instance or None
     """
-    import logging
-
-    from django.apps import apps
-
-    logger = logging.getLogger(__name__)
 
     intermediate_model_name = action.get("intermediate_model")
     if not intermediate_model_name:

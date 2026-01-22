@@ -386,7 +386,7 @@ class HorillaMultiStepForm(forms.ModelForm):
                             is_mandatory = (
                                 not model_field.null and not model_field.blank
                             )
-                        except:
+                        except Exception:
                             # If we can't get the model field, check form field's required attribute
                             is_mandatory = getattr(
                                 field, "_original_required", field.required
@@ -406,7 +406,7 @@ class HorillaMultiStepForm(forms.ModelForm):
                         model_field = self._meta.model._meta.get_field(field_name)
                         # Field is mandatory if it doesn't allow null and doesn't allow blank
                         is_mandatory = not model_field.null and not model_field.blank
-                    except:
+                    except Exception:
                         # If we can't get the model field, check form field's required attribute
                         is_mandatory = getattr(
                             field, "_original_required", field.required
@@ -462,7 +462,7 @@ class HorillaMultiStepForm(forms.ModelForm):
                                 is_mandatory_readonly = (
                                     not model_field.null and not model_field.blank
                                 )
-                            except:
+                            except Exception:
                                 is_mandatory_readonly = getattr(
                                     self.fields[field_name],
                                     "_original_required",
@@ -553,7 +553,7 @@ class HorillaMultiStepForm(forms.ModelForm):
                     try:
                         model_field = self._meta.model._meta.get_field(field_name)
                         is_mandatory = not model_field.null and not model_field.blank
-                    except:
+                    except Exception:
                         is_mandatory = field.required
 
                     # In create mode, if field is mandatory, don't make it readonly
@@ -563,7 +563,7 @@ class HorillaMultiStepForm(forms.ModelForm):
                     # Apply readonly/disabled based on field type
                     try:
                         model_field = self._meta.model._meta.get_field(field_name)
-                    except:
+                    except Exception:
                         model_field = None
 
                     # Check if it's a select field (ForeignKey, ManyToMany, or ChoiceField)
@@ -1047,7 +1047,7 @@ class HorillaMultiStepForm(forms.ModelForm):
                         # Get the model field to determine the type
                         try:
                             model_field = self._meta.model._meta.get_field(field_name)
-                        except:
+                        except Exception:
                             # Field might not exist in model (could be a property)
                             continue
 
@@ -1216,20 +1216,14 @@ class PasswordInputWithEye(forms.PasswordInput):
         eye_toggle = f"""
         <div class="relative">
             {password_input}
-            <button type="button"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onclick="togglePassword('{attrs.get('id', name)}')">
-                <img id="eye-icon-{attrs.get('id', name)}"
-                     src="/static/assets/icons/eye-hide.svg"
-                     alt="Toggle Password"
-                     class="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer" />
+            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center"onclick="togglePassword('{attrs.get('id', name)}')">
+                <img id="eye-icon-{attrs.get('id', name)}" src="/static/assets/icons/eye-hide.svg" alt="Toggle Password" class="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-pointer" />
             </button>
         </div>
         <script>
         function togglePassword(fieldId) {{
             const passwordField = document.getElementById(fieldId);
             const eyeIcon = document.getElementById('eye-icon-' + fieldId);
-
             if (passwordField.type === 'password') {{
                 passwordField.type = 'text';
                 eyeIcon.src = '/static/assets/icons/eye.svg';
@@ -1371,7 +1365,7 @@ class HorillaModelForm(forms.ModelForm):
                     model_field = self._meta.model._meta.get_field(field_name)
                     # Field is mandatory if it doesn't allow null and doesn't allow blank
                     is_mandatory = not model_field.null and not model_field.blank
-                except:
+                except Exception:
                     # If we can't get the model field, check form field's required attribute
                     is_mandatory = field.required
 
@@ -1417,13 +1411,13 @@ class HorillaModelForm(forms.ModelForm):
                 model = self._meta.model
                 try:
                     model_field = model._meta.get_field(field_name)
-                except:
+                except Exception:
                     if self.condition_model and field_name in self.condition_fields:
                         try:
                             model_field = self.condition_model._meta.get_field(
                                 field_name
                             )
-                        except:
+                        except Exception:
                             pass
 
                 if model_field:
@@ -1829,7 +1823,7 @@ class HorillaModelForm(forms.ModelForm):
                                     is_mandatory = (
                                         not model_field.null and not model_field.blank
                                     )
-                                except:
+                                except Exception:
                                     is_mandatory = field.required
 
                                 # Only disable if not mandatory in create/duplicate mode
@@ -1898,7 +1892,7 @@ class HorillaModelForm(forms.ModelForm):
                             is_mandatory = (
                                 not model_field.null and not model_field.blank
                             )
-                        except:
+                        except Exception:
                             # If we can't get the model field, check form field's required attribute
                             is_mandatory = field.required
 
@@ -1916,7 +1910,7 @@ class HorillaModelForm(forms.ModelForm):
                         model_field = self._meta.model._meta.get_field(field_name)
                         # Field is mandatory if it doesn't allow null and doesn't allow blank
                         is_mandatory = not model_field.null and not model_field.blank
-                    except:
+                    except Exception:
                         # If we can't get the model field, check form field's required attribute
                         is_mandatory = field.required
 
@@ -2602,7 +2596,7 @@ class HorillaModelForm(forms.ModelForm):
                 model = self._meta.model
                 try:
                     model_field = model._meta.get_field(field_name)
-                except:
+                except Exception:
                     continue
 
                 # Validate ModelChoiceField (ForeignKey)
@@ -2662,7 +2656,7 @@ class HorillaModelForm(forms.ModelForm):
                         # Get the model field to determine the type
                         try:
                             model_field = self._meta.model._meta.get_field(field_name)
-                        except:
+                        except Exception:
                             # Field might not exist in model (could be a property)
                             continue
 

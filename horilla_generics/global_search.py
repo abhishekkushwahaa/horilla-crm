@@ -396,7 +396,7 @@ class GlobalSearchView(LoginRequiredMixin, View):
                     previous_url = request.session.get("pre_search_url", "/")
                 else:
                     request.session["pre_search_url"] = previous_url
-            except:
+            except Exception:
                 previous_url = request.session.get("pre_search_url", "/")
 
         if not query:

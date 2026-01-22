@@ -5,7 +5,7 @@ Defines signal receivers to keep caches and related state in sync.
 """
 
 from django.core.cache import cache
-from django.db.models.signals import post_delete, post_save, pre_save
+from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 from horilla_core.models import ListColumnVisibility
