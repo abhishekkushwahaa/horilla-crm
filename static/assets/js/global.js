@@ -783,16 +783,27 @@ function hxConfirmForm(element, messageText) {
     });
 }
 
+// Track processed messages to prevent duplicates
+var processedMessages = new Set();
+
 function showMessages() {
     var messages = [];
 
     // Collect all messages first
     $("#messages-container .message").each(function () {
         var $message = $(this);
-        messages.push({
-            level: $message.data("level"),
-            text: $message.data("message")
-        });
+        var messageText = $message.data("message");
+        var messageKey = $message.data("level") + "|" + messageText;
+
+        // Only process messages that haven't been shown yet
+        if (!processedMessages.has(messageKey)) {
+            messages.push({
+                level: $message.data("level"),
+                text: messageText
+            });
+            processedMessages.add(messageKey);
+        }
+        // Always remove the message element to prevent reprocessing
         $message.remove();
     });
 
@@ -820,6 +831,17 @@ function showMessages() {
 
         delay += 4500; // 4000ms timer + 500ms gap between messages
     });
+
+    // Clean up old processed messages after 10 seconds to prevent memory leak
+    setTimeout(function() {
+        var keysToRemove = [];
+        processedMessages.forEach(function(key) {
+            keysToRemove.push(key);
+        });
+        keysToRemove.forEach(function(key) {
+            processedMessages.delete(key);
+        });
+    }, 10000);
 }
 
 
@@ -1454,6 +1476,47 @@ $(document).on('click', '[id$="modal"], [id$="Modal"]', function(e) {
     }
 });
 
+// // Dropdown functionality
+// document.addEventListener('DOMContentLoaded', function () {
+//     document.addEventListener('click', function (e) {
+//         const wrapper = e.target.closest('.dropdown-wrapper');
+
+//         if (wrapper) {
+//             const dropdown = wrapper.querySelector('.dropdown-content');
+//             const clickedDropdown = e.target.closest('.dropdown-content');
+//             if (clickedDropdown) {
+//                 e.stopPropagation();
+//                 return;
+//             }
+
+//             const trigger = Array.from(wrapper.children).find(el =>
+//                 el !== dropdown && (el.tagName === 'BUTTON' || el.tagName === 'A' || el.querySelector('svg'))
+//             );
+
+//             if (trigger && trigger.contains(e.target)) {
+//                 e.stopPropagation();
+
+//                 document.querySelectorAll('.dropdown-wrapper.active').forEach(other => {
+//                     if (other !== wrapper) other.classList.remove('active');
+//                 });
+
+//                 wrapper.classList.toggle('active');
+//             }
+//         } else {
+//             document.querySelectorAll('.dropdown-wrapper.active').forEach(wrapper => {
+//                 wrapper.classList.remove('active');
+//             });
+//         }
+//     });
+
+//     document.body.addEventListener('htmx:afterRequest', function (e) {
+//         const wrapper = e.target.closest('.dropdown-wrapper');
+//         if (wrapper && wrapper.classList.contains('active')) {
+//             wrapper.classList.remove('active');
+//         }
+//     });
+// });
+
 // Dropdown functionality
 document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', function (e) {
@@ -1462,30 +1525,39 @@ document.addEventListener('DOMContentLoaded', function () {
         if (wrapper) {
             const dropdown = wrapper.querySelector('.dropdown-content');
             const clickedDropdown = e.target.closest('.dropdown-content');
+
+            // If clicking inside dropdown content (on links), allow it to proceed
             if (clickedDropdown) {
-                e.stopPropagation();
-                return;
+                // Don't stop propagation for links inside dropdown
+                // Just close other dropdowns and let the click proceed
+                document.querySelectorAll('.dropdown-wrapper.active').forEach(other => {
+                    if (other !== wrapper) other.classList.remove('active');
+                });
+                return; // Let the event continue for HTMX
             }
 
             const trigger = Array.from(wrapper.children).find(el =>
                 el !== dropdown && (el.tagName === 'BUTTON' || el.tagName === 'A' || el.querySelector('svg'))
             );
 
+            // Only stop propagation for the dropdown BUTTON/TRIGGER, not the content
             if (trigger && trigger.contains(e.target)) {
                 e.stopPropagation();
+                e.preventDefault();
 
                 document.querySelectorAll('.dropdown-wrapper.active').forEach(other => {
                     if (other !== wrapper) other.classList.remove('active');
                 });
 
                 wrapper.classList.toggle('active');
+                return;
             }
         } else {
             document.querySelectorAll('.dropdown-wrapper.active').forEach(wrapper => {
                 wrapper.classList.remove('active');
             });
         }
-    });
+    }, true); // Keep capture phase
 
     document.body.addEventListener('htmx:afterRequest', function (e) {
         const wrapper = e.target.closest('.dropdown-wrapper');
