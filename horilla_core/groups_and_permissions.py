@@ -714,7 +714,9 @@ class RolePermissionsView(LoginRequiredMixin, TemplateView):
             _role = get_object_or_404(Role, id=role_id)
         except Exception:
             messages.error(request, _("Role does not exist"))
-            return HttpResponse("<script>$('#reloadButton').click();</script>")
+            return HttpResponse(
+                "<div id=\"followup-contents\"><script>$('#reloadButton').click();</script></div>"
+            )
 
         return super().get(request, *args, **kwargs)
 
