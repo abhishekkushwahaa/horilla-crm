@@ -167,8 +167,9 @@ DefaultDashboardGenerator.extra_models.append(
         "name": "Leads",
         "icon": "fa-user-plus",
         "color": "blue",
-        "chart_func": create_lead_charts,
-        "table_func": lead_table_func,
+        "include_kpi": True,  # Set to True to show KPI (optional, you can remove this if you don't want KPI)
+        "chart_func": create_lead_charts,  # Shows chart
+        "table_func": lead_table_func,  # Shows table
         "table_fields_func": lead_table_fields,
     }
 )

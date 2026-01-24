@@ -147,6 +147,7 @@ DefaultDashboardGenerator.extra_models.append(
         "name": "Campaigns",
         "icon": "fa-bullhorn",
         "color": "orange",
+        "include_kpi": True,
         "chart_func": create_campaign_charts,
     }
 )

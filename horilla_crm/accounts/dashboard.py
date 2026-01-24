@@ -107,6 +107,7 @@ DefaultDashboardGenerator.extra_models.append(
         "name": "Accounts",
         "icon": "fa-building",
         "color": "indigo",
+        "include_kpi": True,
         "chart_func": create_account_charts,
     }
 )

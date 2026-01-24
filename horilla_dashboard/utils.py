@@ -84,12 +84,18 @@ class DefaultDashboardGenerator:
         return has_view_all or has_view_own
 
     def generate_kpi_data(self):
-        """Generate simple count KPIs"""
+        """Generate simple count KPIs only if include_kpi flag is True"""
         kpis = []
 
-        for model_info in self.models[:4]:
+        for model_info in self.models:
             try:
                 model_class = model_info["model"]
+
+                # Only generate KPI if include_kpi flag is explicitly set to True
+                include_kpi = model_info.get("include_kpi", False)
+
+                if not include_kpi:
+                    continue
 
                 if self.has_model_permission(model_class):
                     count = self.get_queryset(model_info["model"]).count()

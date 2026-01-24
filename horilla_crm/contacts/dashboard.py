@@ -46,5 +46,6 @@ DefaultDashboardGenerator.extra_models.append(
         "name": "Contacts",
         "icon": "fa-address-book",
         "color": "green",
+        "include_kpi": True,  # Set to True to show KPI
     }
 )

@@ -202,6 +202,7 @@ DefaultDashboardGenerator.extra_models.append(
         "name": "Opportunities",
         "icon": "fa-handshake",
         "color": "purple",
+        "include_kpi": True,
         "chart_func": create_opportunity_charts,
         "table_func": opportunity_table_func,
         "table_fields_func": opportuntiy_table_fields,
