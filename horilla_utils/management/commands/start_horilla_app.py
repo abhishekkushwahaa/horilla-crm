@@ -118,7 +118,7 @@ class Command(BaseCommand):
 
         # __init__.py
         with open(os.path.join(target_dir, "__init__.py"), "w") as f:
-            f.write(f'"""\nPackage initialization for the {app_name} app\n"""\n\n')
+            f.write(f'"""\nPackage initialization for the {app_name} app\n"""\n')
 
         # apps.py
         # Convert app_name to proper class name (e.g., 'my_app' -> 'MyAppConfig')
@@ -133,12 +133,12 @@ class Command(BaseCommand):
             f.write(
                 f'"""\nAppConfig for the {app_name} app\n"""\n\n'
                 "from django.apps import AppConfig\n"
-                "from django.utils.translation import gettext_lazy as _\n\n"
+                "from django.utils.translation import gettext_lazy as _\n\n\n"
                 f"class {class_name}(AppConfig):\n"
-                f'    """App configuration class for {app_name}."""\n'
-                "    default_auto_field = 'django.db.models.BigAutoField'\n"
-                f"    name = '{app_name}'\n"
-                f"    verbose_name = _('{verbose_name}')\n\n"
+                f'    """App configuration class for {app_name}."""\n\n'
+                '    default_auto_field = "django.db.models.BigAutoField"\n'
+                f'    name = "{app_name}"\n'
+                f'    verbose_name = _("{verbose_name}")\n\n'
                 "    def ready(self):\n"
                 '        """Run app initialization logic (executed after Django setup).\n'
                 "        Used to auto-register URLs and connect signals if required.\n"
@@ -152,9 +152,8 @@ class Command(BaseCommand):
                 f"                path('{app_name}/', include('{app_name}.urls')),\n"
                 "            )\n"
                 "        except Exception as e:\n"
-                "            import logging\n"
-                f'            logging.warning(f"{class_name}.ready failed: {{e}}")\n'
-                "            pass\n\n"
+                "            import logging\n\n"
+                f'            logging.warning("{class_name}.ready failed: %s", e)\n'
                 "        super().ready()\n"
             )
 
@@ -162,22 +161,17 @@ class Command(BaseCommand):
         with open(os.path.join(target_dir, "models.py"), "w") as f:
             f.write(
                 f'"""\nModels for the {app_name} app\n"""\n\n'
-                "from django.db import models\n\n"
                 f"# Create your {app_name} models here.\n"
             )
 
         # views.py
         with open(os.path.join(target_dir, "views.py"), "w") as f:
-            f.write(
-                f'"""\nViews for the {app_name} app\n"""\n\n'
-                "from django.shortcuts import render\n"
-            )
+            f.write(f'"""\nViews for the {app_name} app\n"""\n')
 
         # admin.py
         with open(os.path.join(target_dir, "admin.py"), "w") as f:
             f.write(
                 f'"""\nAdmin registration for the {app_name} app\n"""\n\n'
-                "from django.contrib import admin\n\n"
                 f"# Register your {app_name} models here.\n"
             )
 
@@ -185,7 +179,6 @@ class Command(BaseCommand):
         with open(os.path.join(target_dir, "tests.py"), "w") as f:
             f.write(
                 f'"""\nTests for the {app_name} app\n"""\n\n'
-                "from django.test import TestCase\n\n"
                 f"# Create your {app_name} tests here.\n"
             )
 
@@ -197,6 +190,9 @@ class Command(BaseCommand):
 
     def _create_additional_files(self, app_name, target_dir):
         """Create additional Python files for the app"""
+        # Convert app_name to verbose name with spaces (e.g., 'my_app' -> 'My App')
+        verbose_name = " ".join(word.capitalize() for word in app_name.split("_"))
+
         additional_files = {
             "scheduler.py": (
                 f'"""\nScheduler for the {app_name} app\n"""\n\n'
@@ -204,24 +200,18 @@ class Command(BaseCommand):
             ),
             "signals.py": (
                 f'"""\nSignals for the {app_name} app\n"""\n\n'
-                "from django.db.models.signals import pre_save, post_save\n"
-                "from django.dispatch import receiver\n\n"
                 f"# Define your {app_name} signals here\n"
             ),
             "filters.py": (
                 f'"""\nFilters for the {app_name} app\n"""\n\n'
-                "import django_filters\n\n"
                 f"# Define your {app_name} filters here\n"
             ),
             "forms.py": (
                 f'"""\nForms for the {app_name} app\n"""\n\n'
-                "from django import forms\n\n"
                 f"# Define your {app_name} forms here\n"
             ),
             "urls.py": (
                 f'"""\nURLs for the {app_name} app\n"""\n\n'
-                "from django.urls import path\n"
-                "from . import views\n\n"
                 f"app_name = '{app_name}'\n\n"
                 "urlpatterns = [\n"
                 "    # Define your URL patterns here\n"
@@ -238,8 +228,18 @@ class Command(BaseCommand):
                 "    sub_section_menu,\n"
                 "    settings_menu,\n"
                 "    my_settings_menu,\n"
-                ")\n"
+                ")\n\n"
                 "# Define your menu registration logic here\n"
+            ),
+            "registration.py": (
+                f'"""\nFeature registration for the {app_name} app.\n"""\n\n'
+                "from horilla.registry.feature import register_feature, register_model_for_feature\n\n"
+                "# Register your app features and models here\n"
+            ),
+            "__version__.py": (
+                f'"""\nVersion information for the {app_name} app\n"""\n\n'
+                f'__version__ = "0.1.0"\n'  # Initial version
+                f'__module_name__ = "{verbose_name}"\n'
             ),
         }
 
