@@ -14,6 +14,8 @@ class UserCalendarPreferenceSerializer(serializers.ModelSerializer):
     user_details = HorillaUserSerializer(source="user", read_only=True)
 
     class Meta:
+        """Meta class for UserCalendarPreferenceSerializer"""
+
         model = UserCalendarPreference
         fields = "__all__"
 
@@ -24,5 +26,7 @@ class UserAvailabilitySerializer(serializers.ModelSerializer):
     user_details = HorillaUserSerializer(source="user", read_only=True)
 
     class Meta:
+        """Meta class for UserAvailabilitySerializer"""
+
         model = UserAvailability
         fields = "__all__"
