@@ -161,6 +161,7 @@ class RoleUsersListView(LoginRequiredMixin, HorillaListView):
             try:
                 Role.objects.get(pk=role_id)
                 queryset = queryset.filter(role=role_id)
+                return queryset
             except Exception:
                 messages.error(self.request, _("The requested role does not exist."))
                 return HttpResponse(
