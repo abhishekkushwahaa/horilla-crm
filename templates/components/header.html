@@ -262,6 +262,12 @@
             }
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function handleNewNotification(data) {
             const timesince = "Just now";
 
@@ -299,7 +305,7 @@
 
             newDropdownItem.innerHTML = `
             <div class="flex items-center justify-between">
-                <span>${data.message}</span>
+                <span>${escapeHtml(data.message)}</span>
                 <button
                     hx-post="/horilla_notifications/notifications-read/${data.id}/"
                     hx-target="#notif-${data.id}"
@@ -311,7 +317,7 @@
                 </button>
             </div>
             <p class="text-xs text-[#777777] mt-1">
-                ${timesince} by ${data.sender}
+                ${timesince} by ${escapeHtml(data.sender)}
             </p>
             `;
 
@@ -379,8 +385,8 @@
             <div class="flex items-start gap-2">
             <div class="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
                 <div class="flex-1">
-                    <h5 class="text-sm font-semibold mb-2">${data.message}</h5>
-                    <p class="text-xs text-[#777777] mt-1">${timesince} by ${data.sender}</p>
+                    <h5 class="text-sm font-semibold mb-2">${escapeHtml(data.message)}</h5>
+                    <p class="text-xs text-[#777777] mt-1">${timesince} by ${escapeHtml(data.sender)}</p>
                 </div>
             </div>
             `;
