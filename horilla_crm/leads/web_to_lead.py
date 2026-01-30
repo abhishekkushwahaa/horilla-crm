@@ -368,6 +368,7 @@ class SaveLeadFormView(LoginRequiredMixin, FormView):
                 "errors": form.errors,
                 "lead_fields": lead_fields,
                 "form_data": form_data,
+                "lead_owners": User.objects.filter(is_active=True),
             }
 
             response = render(self.request, self.template_name, context)
