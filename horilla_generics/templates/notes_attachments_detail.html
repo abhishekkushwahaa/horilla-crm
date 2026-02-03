@@ -1,6 +1,8 @@
 {% load static %}
 {% load i18n %}
-<div class="p-5">
+<button id="detailReloadButton"  hidden hx-get="{{ request.path }}?{{request.GET.urlencode}}" hx-target="#detail-container" hx-swap="outerHTML" hx-select="#detail-container">click</button>
+
+<div class="p-5" id="detail-container">
     <!-- Header -->
     <div class="flex justify-between mb-3">
         <h2 class="text-lg font-semibold">{{ obj.title }}</h2>
