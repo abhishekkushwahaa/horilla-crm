@@ -25,7 +25,7 @@ from django.db import IntegrityError, models
 from django.db.models import CharField, Q, TextField
 from django.db.models.fields import Field
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, QueryDict
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone, translation
 from django.utils.decorators import method_decorator
@@ -33,8 +33,10 @@ from django.utils.encoding import force_str
 from django.views import View
 from django.views.generic import FormView
 
-# First-party (Horilla)
 from horilla.exceptions import HorillaHttp404
+
+# First-party (Horilla)
+from horilla.utils.shortcuts import get_object_or_404
 from horilla_core.decorators import htmx_required
 from horilla_core.models import (
     HorillaContentType,

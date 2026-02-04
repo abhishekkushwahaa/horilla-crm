@@ -83,6 +83,11 @@ urlpatterns = [
         views.SwitchCompanyView.as_view(),
         name="switch_company",
     ),
+    path(
+        "toggle-all-companies/",
+        views.ToggleAllCompaniesView.as_view(),
+        name="toggle_all_companies",
+    ),
     # Holiday Urls
     path(
         "holiday-list-view/", views.HolidayListView.as_view(), name="holiday_list_view"

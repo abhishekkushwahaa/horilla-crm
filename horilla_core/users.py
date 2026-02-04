@@ -218,6 +218,8 @@ class UserListView(LoginRequiredMixin, HorillaListView):
         Get the queryset for the list view, filtered by active company.
         """
         queryset = super().get_queryset()
+        if self.request.session.get("show_all_companies", False):
+            return queryset
         company = getattr(self.request, "active_company", None)
         queryset = queryset.filter(company=company, is_active=True)
         return queryset
