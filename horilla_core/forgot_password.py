@@ -26,7 +26,6 @@ from horilla_core.models import Company
 from horilla_mail.models import HorillaMailConfiguration
 
 
-@method_decorator(htmx_required(login=False), name="dispatch")
 class ForgotPasswordView(View):
     """
     View to handle the forgot password workflow.

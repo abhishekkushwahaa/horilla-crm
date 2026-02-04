@@ -117,7 +117,7 @@
                     <div class="flex justify-end">
                         <button type="button" hx-get="{% url 'horilla_core:forgot_password' %}" hx-target="#sec1"
                             hx-select="#sec2" hx-push-url="true" hx-swap="outerHTML"
-                            class="text-sm font-medium text-red-500 mb-3 mt-2 cursor-pointer">
+                            class="text-sm font-medium text-red-500 mb-3 mt-2 cursor-pointer text-red-600">
                             {% trans "Forgot Password?" %}
                         </button>
                     </div>
@@ -159,37 +159,6 @@
         });
     </script>
 
-    <!-- Password Toggle Function -->
-    <script>
-        function togglePassword() {
-            const passwordInput = document.getElementById('passwordInput');
-            const eyeIcon = document.getElementById('eyeIcon');
-            const eyeHideIcon = document.getElementById('eyeHideIcon');
-
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.classList.add('hidden');
-                eyeHideIcon.classList.remove('hidden');
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.classList.remove('hidden');
-                eyeHideIcon.classList.add('hidden');
-            }
-        }
-
-        // Show div function (for login page sections)
-        function showDiv(idToShow) {
-            const divs = document.querySelectorAll('div[id^="sec"]');
-            divs.forEach((div) => {
-                div.style.display = div.id === idToShow ? "block" : "none";
-            });
-        }
-
-        // Initialize on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            showDiv("sec1");
-        });
-    </script>
 
     <!-- Global Scripts -->
     <script src="{% url 'javascript-catalog' %}"></script>
