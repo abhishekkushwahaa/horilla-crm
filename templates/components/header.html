@@ -220,6 +220,26 @@
             }
         });
 
+        document.body.addEventListener('htmx:afterSwap', function(event){
+            const target = event.detail.target;
+            if(target && target.id && target.id.startsWith('notif-')) {
+                const notifId = target.id.replace('notif-', '');
+                setTimeout(function() {
+                    updateNotificationCount();
+                    toggleNotificationDot('all-notif-' + notifId);
+                }, 100);
+            }
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function(event){
+            const target = event.detail.target;
+            if(target && target.id && target.id.startsWith('notif-')) {
+                setTimeout(function() {
+                    updateNotificationCount();
+                }, 150);
+            }
+        });
+
         function toggleNotificationDot(notifId) {
             const dot = document.querySelector(`#${notifId} .notif-indicator`);
             if (dot) {
@@ -328,9 +348,9 @@
             <div class="flex items-center justify-between">
                 <span>${escapeHtml(data.message)}</span>
                 <button
-                    hx-post="/horilla_notifications/notifications-read/${data.id}/"
+                    hx-post="/notifications/notifications-read/${data.id}/"
                     hx-target="#notif-${data.id}"
-                    hx-on:click="setTimeout(function(){ updateNotificationCount(-1); }, 500)"
+                    onclick="event.stopPropagation();"
                     hx-swap="outerHTML"
                     class="cursor-pointer text-xs group text-primary-600 w-6 h-6 bg-primary-100
                         hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center">
@@ -396,7 +416,7 @@
             newSidebarItem.id = `all-notif-${data.id}`;
             newSidebarItem.innerHTML = `
             <button
-                hx-post="/horilla_notifications/notification-delete/${data.id}/"
+                hx-post="/notifications/notification-delete/${data.id}/"
                 class="delete-notification absolute top-2 right-2 text-xs"
                 hx-on:click="setTimeout(() => $('#reloadMessagesButton').click(), 500)"
                 hx-on:htmx:afterRequest="if(event.detail.successful) fadeAndRemoveNotification('all-notif-{{ notification.id }}')"

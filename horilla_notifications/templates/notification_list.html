@@ -46,10 +46,6 @@
                             hx-post="{% url 'horilla_notifications:mark_read' notification.id %}"
                             hx-target="#notif-{{ notification.id }}"
                             onclick="event.stopPropagation()"
-                            hx-on:click="setTimeout(() => {
-                                updateNotificationCount();
-                                toggleNotificationDot('all-notif-{{ notification.id }}');
-                            }, 500)"
                             hx-swap="outerHTML"
                             class="cursor-pointer text-xs group text-primary-600 w-6 h-6 bg-primary-100
                                     hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center">

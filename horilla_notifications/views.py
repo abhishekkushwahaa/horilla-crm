@@ -37,7 +37,7 @@ class MarkNotificationReadView(LoginRequiredMixin, View):
             notif.save()
         except Notification.DoesNotExist:
             pass
-        return HttpResponse(status=200)
+        return HttpResponse("", status=200)
 
 
 class MarkAllNotificationsReadView(LoginRequiredMixin, View):
