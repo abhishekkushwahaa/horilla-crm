@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     "horilla_activity",
     "horilla_calendar",
     "horilla_keys",
+    "horilla_automations",
 ]
 
 

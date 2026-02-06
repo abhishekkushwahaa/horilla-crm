@@ -3,7 +3,7 @@
 <div class="col-span-10" id="{{view_id|safe }}">
     {% include "messages.html" %}
     <button id="reloadButton"  hidden hx-get="{{ request.path }}?{{request.GET.urlencode}}" hx-target="#{{ view_id|safe }}" hx-trigger="click" hx-swap="outerHTML" hx-select="#{{ view_id|safe }}">click</button>
-    {% has_perm "opportunities.view_bigdealalert" as can_view_big_deal_alert %}
+    {% has_perm "horilla_automations.view_horillaautomation" as can_view_big_deal_alert %}
     {% if can_view_big_deal_alert %}
         {% if alerts %}
             {% for alert in alerts %}

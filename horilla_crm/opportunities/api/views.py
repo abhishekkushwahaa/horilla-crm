@@ -13,7 +13,6 @@ from rest_framework.response import Response
 from horilla_core.api.mixins import BulkOperationsMixin, SearchFilterMixin
 from horilla_core.api.permissions import IsCompanyMember
 from horilla_crm.opportunities.api.serializers import (
-    BigDealAlertSerializer,
     DefaultOpportunityMemberSerializer,
     OpportunitySerializer,
     OpportunityStageSerializer,
@@ -21,7 +20,6 @@ from horilla_crm.opportunities.api.serializers import (
     OpportunityTeamSerializer,
 )
 from horilla_crm.opportunities.models import (
-    BigDealAlert,
     DefaultOpportunityMember,
     Opportunity,
     OpportunityStage,
@@ -129,15 +127,3 @@ class DefaultOpportunityMemberViewSet(
         "opportunity_access_level",
         "company",
     ]
-
-
-class BigDealAlertViewSet(
-    SearchFilterMixin, BulkOperationsMixin, viewsets.ModelViewSet
-):
-    """ViewSet for BigDealAlert model"""
-
-    queryset = BigDealAlert.objects.all()
-    serializer_class = BigDealAlertSerializer
-    permission_classes = [permissions.IsAuthenticated, IsCompanyMember]
-    search_fields = ["alert_name", "sender_name", "sender_email"]
-    filterset_fields = ["active", "notify_opportunity_owner", "company"]

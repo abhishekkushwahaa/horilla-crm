@@ -8,7 +8,6 @@ using HorillaFilterSet. Each filter class allows filtering all fields
 
 from horilla_core.mixins import OwnerFiltersetMixin
 from horilla_crm.opportunities.models import (
-    BigDealAlert,
     DefaultOpportunityMember,
     Opportunity,
     OpportunityStage,
@@ -63,15 +62,3 @@ class OpportunityTeamMembersFilter(HorillaFilterSet):
         fields = "__all__"
         exclude = ["additional_info"]
         search_fields = ["user__first_name", "user__last_name"]
-
-
-class BigDealAlertFilter(HorillaFilterSet):
-    """Filter for BigDealAlert model with search on 'alert_name'."""
-
-    class Meta:
-        """Meta options for BigDealAlertFilter."""
-
-        model = BigDealAlert
-        fields = "__all__"
-        exclude = ["additional_info"]
-        search_fields = ["alert_name"]

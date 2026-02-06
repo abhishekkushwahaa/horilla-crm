@@ -6,7 +6,6 @@ from rest_framework import serializers
 
 from horilla_core.api.serializers import HorillaUserSerializer
 from horilla_crm.opportunities.models import (
-    BigDealAlert,
     DefaultOpportunityMember,
     Opportunity,
     OpportunityStage,
@@ -73,14 +72,4 @@ class DefaultOpportunityMemberSerializer(serializers.ModelSerializer):
         """Meta options for DefaultOpportunityMemberSerializer."""
 
         model = DefaultOpportunityMember
-        fields = "__all__"
-
-
-class BigDealAlertSerializer(serializers.ModelSerializer):
-    """Serializer for BigDealAlert model"""
-
-    class Meta:
-        """Meta options for BigDealAlertSerializer."""
-
-        model = BigDealAlert
         fields = "__all__"
