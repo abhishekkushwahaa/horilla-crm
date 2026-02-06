@@ -1920,9 +1920,15 @@ class GetModelFieldChoicesView(LoginRequiredMixin, View):
         exclude_fields = list(set(exclude_fields + default_exclude))
 
         # Build field choices
+        # Use _meta.fields and _meta.many_to_many to get only forward fields (not reverse relations)
+        # This excludes one-to-many and many-to-many reverse relationships
         field_choices = [("", "---------")]
-        for field in model_class._meta.get_fields():
-            if not hasattr(field, "name") or field.name in exclude_fields:
+        all_forward_fields = list(model_class._meta.fields) + list(
+            model_class._meta.many_to_many
+        )
+
+        for field in all_forward_fields:
+            if field.name in exclude_fields:
                 continue
 
             # Filter by field types if specified

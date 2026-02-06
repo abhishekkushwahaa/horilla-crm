@@ -2466,7 +2466,7 @@ class HorillaModelForm(forms.ModelForm):
         return [("", "---------")]
 
     def _get_model_field_choices(self, model_name):
-        """Generic method to get field choices for a model (including ForeignKey fields)"""
+        """Generic method to get field choices for a model (excluding reverse relations)"""
         field_choices = [("", "---------")]
 
         if not model_name:
@@ -2484,9 +2484,16 @@ class HorillaModelForm(forms.ModelForm):
                     continue
 
             if model:
-                for field in model._meta.get_fields():
-                    # Skip reverse relations and some fields, but include ForeignKey fields
-                    if hasattr(field, "name") and field.name not in [
+                # Use _meta.fields and _meta.many_to_many to get only forward fields
+                # This excludes one-to-many and many-to-many reverse relationships
+                # which don't have a direct 'name' attribute and are accessed via related_name
+                all_forward_fields = list(model._meta.fields) + list(
+                    model._meta.many_to_many
+                )
+
+                for field in all_forward_fields:
+                    # Skip excluded fields
+                    if field.name in [
                         "id",
                         "pk",
                         "created_at",
@@ -2496,11 +2503,13 @@ class HorillaModelForm(forms.ModelForm):
                         "company",
                         "additional_info",
                     ]:
-                        verbose_name = (
-                            getattr(field, "verbose_name", None)
-                            or field.name.replace("_", " ").title()
-                        )
-                        field_choices.append((field.name, verbose_name))
+                        continue
+
+                    verbose_name = (
+                        getattr(field, "verbose_name", None)
+                        or field.name.replace("_", " ").title()
+                    )
+                    field_choices.append((field.name, verbose_name))
         except Exception as e:
             logger.error(
                 "Error fetching model %s: %s", model_name, str(e), exc_info=True
