@@ -8,6 +8,7 @@ Horilla application.
 
 # Standard library
 import logging
+import re
 
 from django import template
 
@@ -191,3 +192,49 @@ def get_section_info_for_model(model_input):
         logger.warning("Error in get_section_info_for_model: %s", e)
 
     return {"section": "", "url": "#"}
+
+
+def has_xss(value: str) -> bool:
+    """
+    Detect common XSS (Cross-Site Scripting) attempts in a string.
+
+    This function checks for various XSS patterns including:
+    - Script tags (<script>...</script>)
+    - JavaScript pseudo-protocol (javascript:)
+    - Inline event handlers (onclick, onload, etc.)
+    - Dangerous active content (embed, object, iframe, svg, etc.)
+    - JS API abuse patterns
+
+    Args:
+        value (str): The string to check for XSS patterns.
+
+    Returns:
+        bool: True if XSS patterns are detected, False otherwise.
+
+    Example:
+        >>> has_xss("<script>alert('XSS')</script>")
+        True
+        >>> has_xss("Hello world")
+        False
+        >>> has_xss("javascript:alert('XSS')")
+        True
+    """
+    if not isinstance(value, str):
+        return False
+
+    xss_patterns = [
+        # <script> ... </script> with any attributes
+        r"<\s*script[^>]*>.*?<\s*/\s*script\s*>",
+        # Opening <script> tag (for incomplete scripts)
+        r"<\s*script[^>]*>",
+        r"javascript\s*:",  # javascript: pseudo-protocol
+        r"on\w+\s*=",  # inline event handlers (onclick, onload, etc.)
+        # dangerous active content
+        r"<\s*(embed|object|iframe|svg|math|link|meta).*?>",
+        # JS API abuse
+        r"on\w+\s*=\s*['\"]?\s*(eval|setTimeout|setInterval|new\s+Function|XMLHttpRequest|fetch|\$\s*\()[^>]*",
+    ]
+
+    combined = re.compile("|".join(xss_patterns), re.IGNORECASE | re.DOTALL)
+    result = bool(combined.search(value))
+    return result
