@@ -172,7 +172,7 @@ def process_email_message(msg, config, allowed_senders):
 
     message_id = msg.get("Message-ID", "")
 
-    if Lead.objects.filter(email_message_id=message_id).exists():
+    if Lead.objects.filter(message_id=message_id).exists():
         return "skipped"
 
     in_reply_to = msg.get("In-Reply-To", "")
@@ -213,7 +213,7 @@ def process_email_message(msg, config, allowed_senders):
         lead_status=LeadStatus.objects.first(),
         company=config.company,
         lead_source="email",
-        email_message_id=message_id,
+        message_id=message_id,
     )
     return "created"
 
@@ -226,7 +226,7 @@ def process_outlook_message(msg, config, allowed_senders):
 
     message_id = msg.get("internetMessageId", "")
 
-    if Lead.objects.filter(email_message_id=message_id).exists():
+    if Lead.objects.filter(message_id=message_id).exists():
         return "skipped"
 
     # Extract In-Reply-To and References from headers
@@ -270,7 +270,7 @@ def process_outlook_message(msg, config, allowed_senders):
         lead_status=LeadStatus.objects.first(),
         company=config.company,
         lead_source="email",
-        email_message_id=message_id,
+        message_id=message_id,
     )
     return "created"
 
@@ -280,12 +280,12 @@ def check_existing_thread(in_reply_to, references):
 
     existing_lead = None
     if in_reply_to:
-        existing_lead = Lead.objects.filter(email_message_id=in_reply_to).first()
+        existing_lead = Lead.objects.filter(message_id=in_reply_to).first()
 
     if not existing_lead and references:
         # References contains all message IDs in the thread
         ref_ids = references.split()
         if ref_ids:
-            existing_lead = Lead.objects.filter(email_message_id__in=ref_ids).first()
+            existing_lead = Lead.objects.filter(message_id__in=ref_ids).first()
 
     return existing_lead is not None
