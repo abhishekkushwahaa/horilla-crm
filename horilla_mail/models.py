@@ -248,7 +248,10 @@ class HorillaMail(HorillaCoreModel):
                 "request": request,
             }
         django_engine = engines["django"]
-        return django_engine.from_string(self.subject or "").render(context)
+        template_str = (self.subject or "").strip()
+        if template_str:
+            template_str = "{% load horilla_tags %}\n" + template_str
+        return django_engine.from_string(template_str).render(context)
 
     def render_body(self, context=None):
         """
@@ -264,7 +267,10 @@ class HorillaMail(HorillaCoreModel):
                 "request": request,
             }
         django_engine = engines["django"]
-        return django_engine.from_string(self.body or "").render(context)
+        template_str = (self.body or "").strip()
+        if template_str:
+            template_str = "{% load horilla_tags %}\n" + template_str
+        return django_engine.from_string(template_str).render(context)
 
     def clean(self):
         """Validate model fields for XSS at model level (works for admin, forms, and API)."""

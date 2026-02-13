@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 # Third-party imports
 import pytz
+from dateutil import parser as dateutil_parser
 from django import template
 from django.apps import apps
 from django.db import models
@@ -39,6 +40,134 @@ logger = logging.getLogger(__name__)
 register = template.Library()
 
 
+def _get_request_user_company():
+    """Get request, user, and company from thread-local. Used for format fallback."""
+    request = getattr(_thread_local, "request", None)
+    user = (
+        request.user
+        if request and hasattr(request, "user") and request.user.is_authenticated
+        else None
+    )
+    company = None
+    if request:
+        company = getattr(request, "active_company", None)
+    if not company and user:
+        company = getattr(user, "company", None)
+    return request, user, company
+
+
+def format_datetime_value(value, user=None, company=None, convert_timezone=True):
+    """
+    Format a date, datetime, or time value using user's format, else company's.
+
+    - datetime: optionally convert to user/company timezone, then format with
+      date_time_format (user else company else default).
+    - date: format with date_format (user else company else default).
+    - time: format with time_format (user else company else default).
+
+    Returns formatted string, or None if value is not date/datetime/time.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        if convert_timezone:
+            tz_str = (user and getattr(user, "time_zone", None)) or (
+                company and getattr(company, "time_zone", None)
+            )
+            if tz_str:
+                try:
+                    user_tz = pytz.timezone(tz_str)
+                    if timezone.is_naive(value):
+                        value = timezone.make_aware(
+                            value, timezone.get_default_timezone()
+                        )
+                    value = value.astimezone(user_tz)
+                except Exception:
+                    pass
+        elif timezone.is_aware(value):
+            value = timezone.localtime(value)
+        fmt = "%Y-%m-%d %H:%M:%S"
+        if user and getattr(user, "date_time_format", None):
+            fmt = user.date_time_format
+        elif company and getattr(company, "date_time_format", None):
+            fmt = company.date_time_format
+        try:
+            return value.strftime(fmt)
+        except Exception:
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(value, date):
+        fmt = "%Y-%m-%d"
+        if user and getattr(user, "date_format", None):
+            fmt = user.date_format
+        elif company and getattr(company, "date_format", None):
+            fmt = company.date_format
+        try:
+            return value.strftime(fmt)
+        except Exception:
+            return value.strftime("%Y-%m-%d")
+    if isinstance(value, time):
+        fmt = "%I:%M:%S %p"
+        if user and getattr(user, "time_format", None):
+            fmt = user.time_format
+        elif company and getattr(company, "time_format", None):
+            fmt = company.time_format
+        try:
+            return value.strftime(fmt)
+        except Exception:
+            return value.strftime("%I:%M:%S %p")
+    return None
+
+
+@register.filter
+def user_datetime_format(value):
+    """
+    Format a date, datetime, or time using the request user's format,
+    falling back to company format. Use in templates: {{ value|user_datetime_format }}
+
+    Returns formatted string for date/datetime/time; passes through other values.
+    """
+    _, user, company = _get_request_user_company()
+    result = format_datetime_value(
+        value, user=user, company=company, convert_timezone=True
+    )
+    return result if result is not None else value
+
+
+@register.filter
+def user_datetime_format_display(value):
+    """
+    Same as user_datetime_format but also accepts pre-formatted date/datetime
+    strings (e.g. from auditlog changes_display_dict). Parses the string and
+    re-formats with the user's format. Use in history "updated" section so
+    dates match the rest of the page: {{ value|user_datetime_format_display }}
+    """
+    _, user, company = _get_request_user_company()
+    result = format_datetime_value(
+        value, user=user, company=company, convert_timezone=True
+    )
+    if result is not None:
+        return result
+    # Parse pre-formatted date/datetime strings and re-format with user format
+    if (
+        isinstance(value, str)
+        and value
+        and value not in ("--", "None", "none")
+        and dateutil_parser
+    ):
+        try:
+            parsed = dateutil_parser.parse(value)
+            if isinstance(parsed, datetime) and timezone.is_naive(parsed):
+                parsed = timezone.make_aware(parsed, timezone.get_default_timezone())
+            result = format_datetime_value(
+                parsed, user=user, company=company, convert_timezone=True
+            )
+            if result is not None:
+                return result
+        except (ValueError, TypeError):
+            pass
+    return value
+
+
 @register.filter
 def get_field(obj, field_path):
     """
@@ -62,14 +191,7 @@ def get_field(obj, field_path):
             elif callable(current):
                 current = current()
 
-        # Obtain the request/user from thread-local (same as you used elsewhere)
-        request = getattr(_thread_local, "request", None)
-        user = (
-            request.user
-            if request and hasattr(request, "user") and request.user.is_authenticated
-            else None
-        )
-
+        _request, user, company = _get_request_user_company()
         final_field_name = parts[-1] if parts else None
 
         if (
@@ -77,29 +199,14 @@ def get_field(obj, field_path):
             and hasattr(parent.__class__, "CURRENCY_FIELDS")
             and final_field_name in getattr(parent.__class__, "CURRENCY_FIELDS", [])
         ):
-
             return get_currency_display_value(parent, final_field_name, user)
 
-        # --- Date/Time formatting ---
-        if isinstance(current, datetime):
-            date_time_format = "%Y-%m-%d %H:%M:%S"
-            if user and getattr(user, "date_time_format", None):
-                date_time_format = user.date_time_format
-            if timezone.is_aware(current):
-                current = timezone.localtime(current)
-            return current.strftime(date_time_format)
-
-        if isinstance(current, date):
-            date_format = "%Y-%m-%d"
-            if user and getattr(user, "date_format", None):
-                date_format = user.date_format
-            return current.strftime(date_format)
-
-        if isinstance(current, time):
-            time_format = "%I:%M:%S %p"
-            if user and getattr(user, "time_format", None):
-                time_format = user.time_format
-            return current.strftime(time_format)
+        # Date/Time formatting via shared helper (user else company format)
+        formatted = format_datetime_value(
+            current, user=user, company=company, convert_timezone=False
+        )
+        if formatted is not None:
+            return formatted
 
         if isinstance(current, bool):
             return _("Yes") if current else _("No")
@@ -527,48 +634,6 @@ def display_fk(value):
 
 numeric_test = re.compile(r"^\d+$")
 
-date_format_mapping = {
-    "DD-MM-YYYY": "%d-%m-%Y",
-    "DD.MM.YYYY": "%d.%m.%Y",
-    "DD/MM/YYYY": "%d/%m/%Y",
-    "MM/DD/YYYY": "%m/%d/%Y",
-    "YYYY-MM-DD": "%Y-%m-%d",
-    "YYYY/MM/DD": "%Y/%m/%d",
-    "MMMM D, YYYY": "%B %d, %Y",
-    "DD MMMM, YYYY": "%d %B, %Y",
-    "MMM. D, YYYY": "%b. %d, %Y",
-    "D MMM. YYYY": "%d %b. %Y",
-    "dddd, MMMM D, YYYY": "%A, %B %d, %Y",
-}
-
-time_format_mapping = {
-    "hh:mm A": "%I:%M %p",
-    "HH:mm": "%H:%M",
-}
-
-
-@register.filter(name="selected_format")
-def selected_format(value, company=None) -> str:
-    """Format a date or time value according to the given company's settings.
-
-    Uses mappings in `date_format_mapping` and `time_format_mapping` when
-    the company specifies a custom format; otherwise returns the original value.
-    """
-    if not value:
-        return ""
-
-    if company and (company.date_format or company.time_format):
-        if isinstance(value, date):
-            fmt = company.date_format
-            format_str = date_format_mapping.get(fmt, fmt)
-            return value.strftime(format_str)
-        if isinstance(value, time):
-            fmt = company.time_format
-            format_str = time_format_mapping.get(fmt, fmt)
-            return value.strftime(format_str)
-
-    return value
-
 
 @register.filter
 def is_image_file(filename):
@@ -934,38 +999,14 @@ def display_field_value(obj, field_name, user):
     if value is None:
         return ""
 
-    # Handle DateTime fields with timezone conversion and formatting
-    if isinstance(value, datetime):
-        # Convert to user's timezone if user has timezone preference
-        if hasattr(user, "time_zone") and user.time_zone:
-            try:
-                user_tz = pytz.timezone(user.time_zone)
-                # Make aware if naive
-                if timezone.is_naive(value):
-                    value = timezone.make_aware(value, timezone.get_default_timezone())
-                # Convert to user timezone
-                value = value.astimezone(user_tz)
-            except Exception:
-                pass  # Fall back to default timezone
+    _, _, company = _get_request_user_company()
 
-        # Format according to user's datetime format preference
-        if hasattr(user, "date_time_format") and user.date_time_format:
-            try:
-                return value.strftime(user.date_time_format)
-            except Exception:
-                pass
-
-        # Default datetime format
-        return value.strftime("%Y-%m-%d %H:%M:%S")
-
-    # Handle Date fields
-    if isinstance(value, date):
-        if hasattr(user, "date_format") and user.date_format:
-            try:
-                return value.strftime(user.date_format)
-            except Exception:
-                pass
-        return value.strftime("%Y-%m-%d")
+    # Date/Time/DateTime via shared formatter (user else company, with timezone conversion)
+    formatted = format_datetime_value(
+        value, user=user, company=company, convert_timezone=True
+    )
+    if formatted is not None:
+        return formatted
 
     # Handle ManyToMany fields
     if hasattr(value, "all"):
@@ -1378,6 +1419,28 @@ def has_any_actions_for_queryset(context, actions, queryset):
                 return True  # Found at least one allowed action
 
     return False
+
+
+@register.filter
+def join_attr(manager_or_queryset, attr_name):
+    """
+    Get an attribute from all related objects and join with ", ".
+    Use in mail/notification templates to show all reverse-relation values:
+    {{ instance.department_set|join_attr:'department_name' }}
+    """
+    if manager_or_queryset is None:
+        return ""
+    if not hasattr(manager_or_queryset, "all"):
+        return ""
+    try:
+        values = []
+        for obj in manager_or_queryset.all():
+            val = getattr(obj, attr_name, None)
+            if val is not None and str(val).strip():
+                values.append(str(val))
+        return ", ".join(values)
+    except Exception:
+        return ""
 
 
 @register.filter
