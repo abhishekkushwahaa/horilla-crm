@@ -8,6 +8,7 @@ import csv
 import io
 import logging
 import zipfile
+from datetime import date, datetime
 from io import BytesIO
 
 # Third-party imports
@@ -15,6 +16,8 @@ import pytz
 from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import ForeignKey
+from django.db.models.fields.related import ManyToManyField
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -173,22 +176,25 @@ class ExportView(LoginRequiredMixin, TemplateView):
         safe_name = slugify(model._meta.verbose_name_plural)
         return f"{safe_name}_export_{timestamp}.{export_format}"
 
+    def _get_export_value(self, obj, field_name, field, user):
+        """Delegate to shared helper for use in view and in scheduled export tasks."""
+        return get_export_cell_value(obj, field_name, field, user)
+
     def export_model_data(self, model, export_format):
         """Export all data of a given model in the selected format"""
-
         queryset = model.objects.all()
         fields = model._meta.fields
+        user = getattr(self.request, "user", None)
 
         field_data = [(str(field.verbose_name), field.name, field) for field in fields]
         column_headers = [fd[0] for fd in field_data]
-        field_names = [fd[1] for fd in field_data]
 
         data = []
         for obj in queryset:
             row = []
-            for field_name in field_names:
-                value = getattr(obj, field_name, "")
-                row.append(str(value) if value is not None else "")
+            for _verbose_name, field_name, field in field_data:
+                value = self._get_export_value(obj, field_name, field, user)
+                row.append(value)
             data.append(row)
 
         _model_verbose_name = model._meta.verbose_name_plural.lower().replace(" ", "_")
@@ -384,6 +390,57 @@ class ExportView(LoginRequiredMixin, TemplateView):
             return f"{filename}", buffer
 
         return None, None
+
+
+def get_export_cell_value(obj, field_name, field, user):
+    """
+    Get cell value for export: display labels for choices/CountryField,
+    user-formatted date/datetime, and proper handling for FK/M2M.
+    Shared by ExportView and scheduled export tasks.
+    """
+    try:
+        # Prefer display value for choice fields and CountryField
+        display_method_name = f"get_{field_name}_display"
+        if hasattr(obj, display_method_name):
+            display_method = getattr(obj, display_method_name)
+            if callable(display_method):
+                value = display_method()
+            else:
+                value = getattr(obj, field_name, "")
+        else:
+            value = getattr(obj, field_name, "")
+        if isinstance(field, ForeignKey):
+            value = str(getattr(value, "username", value)) if value else ""
+        elif isinstance(field, ManyToManyField):
+            value = ", ".join(str(item) for item in value.all()) if value else ""
+        # Format date/datetime with user's chosen format and timezone
+        if user and value is not None:
+            if isinstance(value, datetime):
+                if getattr(user, "time_zone", None):
+                    try:
+                        user_tz = pytz.timezone(user.time_zone)
+                        if timezone.is_naive(value):
+                            value = timezone.make_aware(
+                                value, timezone.get_default_timezone()
+                            )
+                        value = value.astimezone(user_tz)
+                    except Exception:
+                        pass
+                fmt = getattr(user, "date_time_format", None) or "%Y-%m-%d %H:%M:%S"
+                try:
+                    value = value.strftime(fmt)
+                except Exception:
+                    value = value.strftime("%Y-%m-%d %H:%M:%S")
+            elif isinstance(value, date) and not isinstance(value, datetime):
+                fmt = getattr(user, "date_format", None) or "%Y-%m-%d"
+                try:
+                    value = value.strftime(fmt)
+                except Exception:
+                    value = value.strftime("%Y-%m-%d")
+        return str(value) if value is not None else ""
+    except Exception as e:
+        logger.error("Error retrieving field %s: %s", field_name, str(e))
+        return ""
 
 
 @method_decorator(htmx_required, name="dispatch")
