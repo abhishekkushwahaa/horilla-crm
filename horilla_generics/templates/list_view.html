@@ -37,6 +37,9 @@
     {% if filter_set_class %}
         {% include "filterpanel.html" %}
     {% endif %}
+    {% if enable_quick_filters %}
+    {% include "partials/quick_filters_bar.html" %}
+    {% endif %}
     <!-- Modal for column selection -->
     {% if bulk_select_option %}
         <div id="exportModal"
@@ -88,7 +91,7 @@
                         <h3 class="text-sm font-semibold mb-1">{% trans 'Add Additional Columns'%}</h3>
                         <p class="text-sm text-[#474747] mb-5">{% trans 'Select more fields you want to export' %}</p>
                         <div class="grid grid-cols-3 gap-4 mb-5 max-h-48 overflow-y-auto">
-                            {% for field in filter_fields %}
+                            {% for field in export_additional_fields %}
                                 <div class="flex items-center gap-2 ">
                                     <input type="checkbox" name="expo_add_{{field.name}}" value="{{ field.name }}" id="expo_add_{{ field.name }}"
                                         class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-600 cursor-pointer" />
@@ -138,7 +141,7 @@
 
                         {% if bulk_export_option  %}
                             <button
-                                class="text-xs px-4 py-2 bg-[#e1850d23] rounded-md hover:bg-[#e1850d] transition duration-300 text-[#e1850d] border border-[#e1850d34] hover:text-[white]"
+                                class="text-xs px-4 py-2 pe-2 bg-[#009dff25] border border-[#009dff41] font-medium rounded-md text-[#009fff] hover:bg-[#0c85ce] w-max transition duration-300 hover:text-[white]"
                                 onclick="exportSelected('{{ view_id|safe }}')"
                                 id="export-all-btn-{{ view_id|safe }}"
                                 style="display: none;">
@@ -221,15 +224,21 @@
                             </button>
                         {% endfor %}
 
-                        <p class="text-xs px-4 py-2 pe-2 bg-[#009dff25] border border-[#009dff41] font-medium rounded-md text-[#009fff] w-max"
-                            id="total-selected-count-{{ view_id|safe }}"
-                            style="display: none;">
-                            {% trans 'Selected'%} (<span id="selected-text-{{ view_id|safe }}" class="text-xs font-medium">{{ total_records_count }}</span>)
-                        </p>
                     </div>
 
                     <div class="ml-auto">
-                        {% if view_type|slice:":11" == "saved_list_" %}
+                        {% if view_type|slice:":11" == "saved_list_" and saved_list_is_owner %}
+                        <button
+                                class="text-xs px-4 py-2 bg-[#e1850d23] rounded-md hover:bg-[#e1850d] transition duration-300 text-[#e1850d] border border-[1px solid #e1850d34] hover:text-[white]"
+                                id="edit-list-btn"
+                                hx-get="{% url 'horilla_generics:save_filter_list' %}?saved_list_id={{ view_type|slice:'11:' }}&main_url={{ main_url|urlencode }}&model_name={{ model_name|urlencode }}"
+                                hx-target="#modalBox"
+                                hx-swap="innerHTML"
+                                hx-trigger="click"
+                                onclick="openModal()">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                {% trans 'Edit List' %}
+                            </button>
                             <button
                                 class="text-xs px-4 py-2 bg-[#98153b1f] rounded-md hover:bg-[#98153b] transition duration-300 text-[#98153b] border border-[1px solid #ff004929] hover:text-[white]"
                                 id="delete-list-btn"
@@ -284,7 +293,7 @@
                 </div>
             {% endif %}
 
-            <div class="custom-scroll relative overflow-hidden overflow-y-auto overflow-x-auto {% if table_width %} h-[calc(100vh_-_245px)] {% endif %} {% if table_height %} [h-51vh] [max-h-unset] {% else %}   {{ table_height_as_class }}  {% endif %}  [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] bg-white rounded-lg max-h-fit z-0  {% if table_class %}  block text-[.8rem] {% endif %}"
+            <div class="custom-scroll relative overflow-hidden overflow-y-auto overflow-x-auto {% if table_width %}{% if quick_filters %}h-[calc(100vh_-_{{ quick_filters_height_adjustment|default:285 }}px)]{% else %}h-[calc(100vh_-_245px)]{% endif %}{% endif %} {% if table_height %} [h-51vh] [max-h-unset] {% else %}   {{ table_height_as_class }}  {% endif %}  [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] bg-white rounded-lg max-h-fit z-0  {% if table_class %}  block text-[.8rem] {% endif %}"
                 id="table-container-{{view_id|safe}}" data-view-id="{{view_id|safe}}" data-record-ids="{{ selected_ids_json }}"
                 data-total-records="{{ total_records_count }}">
                 <table class="w-full {% if not table_class %} border-separate border-spacing-0  {% endif %}">
@@ -399,7 +408,7 @@
                     {% endif %}
                 </p>
             {% endif %}
-            {% if view_type|slice:":11" == "saved_list_" %}
+            {% if view_type|slice:":11" == "saved_list_" and saved_list_is_owner %}
                 <button
                     class="text-xs px-4 py-2 bg-white rounded-md  transition duration-300 bg-primary-600 text-white   m-auto flex"
                     id="delete-list-btn"
@@ -414,7 +423,7 @@
                     <i class="fa-solid fa-trash pe-1"></i>
                     {% trans 'Delete List' %}
             </button>
-            {% else %}
+            {% elif view_type|slice:":11" != "saved_list_" %}
                 {% if no_record_add_button.url %}
                     <button
                         hx-get="{{ no_record_add_button.url }}"

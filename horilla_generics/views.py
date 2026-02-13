@@ -12,7 +12,7 @@ import inspect
 import json
 import logging
 import re
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 # Standard library
@@ -22,6 +22,7 @@ from operator import or_
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+import pytz
 from auditlog.models import LogEntry
 
 # Django / third-party imports
@@ -51,7 +52,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import resolve, reverse, reverse_lazy
 from django.utils import timezone, translation
-from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.dateparse import parse_date, parse_datetime, parse_time
 from django.utils.decorators import method_decorator
 from django.utils.html import escapejs
 from django.utils.translation import gettext_lazy as _
@@ -82,8 +83,10 @@ from horilla_core.models import (
     KanbanGroupBy,
     ListColumnVisibility,
     PinnedView,
+    QuickFilter,
     RecentlyViewed,
     RecycleBin,
+    SavedFilterList,
 )
 from horilla_core.utils import filter_hidden_fields, get_field_permissions_for_model
 from horilla_generics.forms import (
@@ -146,8 +149,10 @@ class HorillaNavView(TemplateView):
     gap_enabled = True
     navbar_indication_attrs: dict = {}
     exclude_kanban_fields: str = ""
+    column_selector_exclude_fields = []
     enable_actions = False
     search_push_url = True
+    enable_quick_filters = False  # Set to True in child classes to enable
 
     def get_navbar_indication_attrs(self):
         """Return additional attributes for navbar indication when enabled."""
@@ -161,6 +166,26 @@ class HorillaNavView(TemplateView):
             user=self.request.user, model_name=self.model_name
         ).first()
         return pinned_view.view_type if pinned_view else "all"
+
+    def get_valid_view_types(self):
+        """Return a set of all valid view type values."""
+        valid_types = {"all", "recently_created", "recently_modified"}
+
+        if self.recently_viewed_option:
+            valid_types.add("recently_viewed")
+
+        # Add custom view types
+        if self.custom_view_type:
+            valid_types.update(self.custom_view_type.keys())
+
+        # Add saved filter list view types
+        saved_lists = SavedFilterList.all_objects.filter(
+            model_name=self.model_name
+        ).filter(Q(user=self.request.user) | Q(is_public=True))
+        for saved_list in saved_lists:
+            valid_types.add(f"saved_list_{saved_list.id}")
+
+        return valid_types
 
     def show_list_only(self):
         """Check if kanban should be hidden based on current view type."""
@@ -189,9 +214,19 @@ class HorillaNavView(TemplateView):
         context["model_name"] = self.model_name
         context["model_app_label"] = self.model_app_label
         context["nav_width"] = self.nav_width
-        context["view_type"] = (
+
+        # Get view_type from request or default, and validate it
+        requested_view_type = (
             self.request.GET.get("view_type") or self.get_default_view_type()
         )
+        valid_view_types = self.get_valid_view_types()
+
+        # If the requested view_type is not in valid choices, default to 'all'
+        if requested_view_type not in valid_view_types:
+            context["view_type"] = "all"
+        else:
+            context["view_type"] = requested_view_type
+
         context["show_list_only"] = self.show_list_only()
         context["custom_view_type"] = self.custom_view_type
         context["pinned_view"] = PinnedView.all_objects.filter(
@@ -208,6 +243,12 @@ class HorillaNavView(TemplateView):
         context["gap_enabled"] = self.gap_enabled
         context["enable_actions"] = self.enable_actions
         context["navbar_indication_attrs"] = self.get_navbar_indication_attrs()
+        # Saved filter lists: user's own + public ones for this model (by position)
+        context["available_saved_filter_lists"] = list(
+            SavedFilterList.all_objects.filter(model_name=self.model_name)
+            .filter(Q(user=self.request.user) | Q(is_public=True))
+            .order_by("-is_public", "name")
+        )
         return context
 
     @cached_property
@@ -229,7 +270,7 @@ class HorillaNavView(TemplateView):
             if self.request.user.has_perm(can_create_perm):
                 actions.append(
                     {
-                        "action": "Import",
+                        "action": _("Import"),
                         "attrs": f"""
                         hx-get="{reverse_lazy('horilla_core:import_data')}?single_import={str(single_import).lower()}&model_name={self.model_name}&app_label={self.model_app_label}"
                         onclick="openModal()"
@@ -239,10 +280,23 @@ class HorillaNavView(TemplateView):
                     }
                 )
 
+            column_selector_url = (
+                f"{reverse_lazy('horilla_generics:column_selector')}"
+                f"?app_label={self.model_app_label}&model_name={self.model_name}&url_name={url_name}"
+            )
+            exclude_cols = getattr(self, "column_selector_exclude_fields", None)
+            if exclude_cols:
+                exclude_list = (
+                    exclude_cols
+                    if isinstance(exclude_cols, (list, tuple))
+                    else [f.strip() for f in str(exclude_cols).split(",") if f.strip()]
+                )
+                if exclude_list:
+                    column_selector_url += "&exclude=" + ",".join(exclude_list)
             actions.extend(
                 [
                     {
-                        "action": "Kanban Settings",
+                        "action": _("Kanban Settings"),
                         "attrs": f"""
                         hx-get="{reverse_lazy('horilla_generics:create_kanban_group')}?model={self.model_name}&app_label={self.model_app_label}&exclude_fields={self.exclude_kanban_fields}"
                         onclick="openModal()"
@@ -251,9 +305,9 @@ class HorillaNavView(TemplateView):
                         """,
                     },
                     {
-                        "action": "Add column to list",
+                        "action": "Add Column to List",
                         "attrs": f"""
-                        hx-get="{reverse_lazy('horilla_generics:column_selector')}?app_label={self.model_app_label}&model_name={self.model_name}&url_name={url_name}"
+                        hx-get="{column_selector_url}"
                         onclick="openModal()"
                         hx-target="#modalBox"
                         hx-swap="innerHTML"
@@ -261,6 +315,23 @@ class HorillaNavView(TemplateView):
                     },
                 ]
             )
+
+            # Add Quick Filter action if enabled
+            if self.enable_quick_filters:
+                search_url = (
+                    str(self.search_url) if self.search_url else self.request.path
+                )
+                actions.append(
+                    {
+                        "action": _("Add Quick Filter"),
+                        "attrs": f"""
+                        hx-get="{search_url}?show_add_quick_filter=true"
+                        onclick="openModal()"
+                        hx-target="#modalBox"
+                        hx-swap="innerHTML"
+                        """,
+                    }
+                )
         return actions
 
 
@@ -315,6 +386,8 @@ class HorillaListView(ListView):
     sorting_target = None
     exclude_columns_from_sorting = []
     no_found_img: str = ""
+    enable_quick_filters = False  # Set to True in child classes to enable
+    exclude_quick_filter_fields = []  # Fields to exclude from quick filters
 
     def __init__(self, **kwargs):
         self._model_fields_cache = None
@@ -353,10 +426,174 @@ class HorillaListView(ListView):
         ).first()
         return pinned_view.view_type if pinned_view else "all"
 
+    def get_available_quick_filter_fields(self):
+        """Auto-detect fields suitable for quick filtering (ForeignKey, Choice, Boolean)"""
+        if not self.enable_quick_filters:
+            return []
+
+        available_fields = []
+
+        for field in self.model._meta.fields:
+            # Skip excluded fields
+            if field.name in self.exclude_quick_filter_fields:
+                continue
+
+            # Skip auto-created and id fields
+            if field.auto_created or field.name == "id":
+                continue
+
+            field_class_name = field.__class__.__name__
+            field_info = None
+
+            # Include ForeignKey fields
+            if field_class_name == "ForeignKey":
+                field_info = {
+                    "name": field.name,
+                    "verbose_name": str(field.verbose_name),
+                    "type": "foreignkey",
+                }
+
+            # Include fields with choices
+            elif field.choices:
+                field_info = {
+                    "name": field.name,
+                    "verbose_name": str(field.verbose_name),
+                    "type": "choice",
+                }
+
+            # Include Boolean fields
+            elif field_class_name in ["BooleanField", "NullBooleanField"]:
+                field_info = {
+                    "name": field.name,
+                    "verbose_name": str(field.verbose_name),
+                    "type": "boolean",
+                }
+
+            if field_info:
+                available_fields.append(field_info)
+
+        return available_fields
+
+    def get_quick_filters(self):
+        """Get active quick filters for current user and model"""
+        if not self.enable_quick_filters:
+            return []
+
+        return QuickFilter.objects.filter(
+            user=self.request.user,
+            app_label=self.model._meta.app_label,
+            model_name=self.model.__name__,
+        )
+
+    def get_quick_filter_choices(self, field_name):
+        """Get choices for a quick filter field"""
+        try:
+            field = self.model._meta.get_field(field_name)
+            field_class_name = field.__class__.__name__
+
+            # Boolean fields
+            if field_class_name in ["BooleanField", "NullBooleanField"]:
+                return [
+                    {"value": "true", "label": _("Yes")},
+                    {"value": "false", "label": _("No")},
+                ]
+
+            # Fields with choices
+            if field.choices:
+                return [{"value": val, "label": label} for val, label in field.choices]
+
+            # ForeignKey fields
+            elif field_class_name == "ForeignKey":
+                related_model = field.related_model
+                queryset = related_model.objects.all()
+
+                # Try to get queryset from filterset if available (for OwnerFiltersetMixin, etc.)
+                if self.filterset_class and field_name:
+                    try:
+                        temp_filterset = self.filterset_class(
+                            request=self.request, data={}
+                        )
+                        if field_name in temp_filterset.filters:
+                            filter_obj = temp_filterset.filters[field_name]
+                            if hasattr(filter_obj, "field") and hasattr(
+                                filter_obj.field, "queryset"
+                            ):
+                                queryset = filter_obj.field.queryset
+                            elif hasattr(filter_obj, "queryset"):
+                                queryset = filter_obj.queryset
+                    except Exception:
+                        pass
+
+                # Limit to reasonable number of choices
+                queryset = queryset[:200]
+                return [{"value": str(obj.pk), "label": str(obj)} for obj in queryset]
+
+            return []
+
+        except Exception as e:
+            logger.error(
+                f"Error getting quick filter choices for {field_name}: {str(e)}"
+            )
+            return []
+
+    def is_valid_quick_filter_value(self, field_name, filter_value):
+        """
+        Return True if filter_value is a valid choice for this quick filter field.
+        Invalid or tampered values (e.g. ?qf_lead_source=dkjh) should be treated as "All".
+        """
+        if not filter_value:
+            return False
+        choices = self.get_quick_filter_choices(field_name)
+        if not choices:
+            return False
+        valid_values = [str(c["value"]) for c in choices]
+        return str(filter_value).strip() in valid_values
+
+    def apply_quick_filters(self, queryset):
+        """Apply active quick filters to queryset. Invalid choice values are ignored (show All)."""
+        if not self.enable_quick_filters:
+            return queryset
+
+        # Only apply quick filters in 'all' view type
+        view_type = self.request.GET.get("view_type") or self.get_default_view_type()
+        if view_type != "all":
+            return queryset
+
+        # Get quick filter values from request
+        for qf in self.get_quick_filters():
+            filter_value = self.request.GET.get(f"qf_{qf.field_name}")
+            if not filter_value:
+                continue
+            # Treat invalid/tampered values as "All" — only apply filter when value is valid
+            if not self.is_valid_quick_filter_value(qf.field_name, filter_value):
+                continue
+            try:
+                field = self.model._meta.get_field(qf.field_name)
+                field_class_name = field.__class__.__name__
+
+                # Handle Boolean fields
+                if field_class_name in ["BooleanField", "NullBooleanField"]:
+                    bool_value = filter_value.lower() == "true"
+                    queryset = queryset.filter(**{qf.field_name: bool_value})
+
+                # Handle ForeignKey fields
+                elif field_class_name == "ForeignKey":
+                    queryset = queryset.filter(**{f"{qf.field_name}_id": filter_value})
+
+                # Handle Choice fields and others
+                else:
+                    queryset = queryset.filter(**{qf.field_name: filter_value})
+
+            except Exception as e:
+                logger.error(f"Error applying quick filter {qf.field_name}: {str(e)}")
+
+        return queryset
+
     def get_queryset(self):
         """Get filtered queryset based on search, filter, or view type parameters."""
 
         queryset = super().get_queryset()
+        queryset = self.apply_quick_filters(queryset)
         view_type = self.request.GET.get("view_type") or self.get_default_view_type()
 
         is_bulk_operation = (
@@ -400,33 +637,36 @@ class HorillaListView(ListView):
         elif view_type.startswith("saved_list_"):
             saved_list_id = view_type.replace("saved_list_", "")
             try:
-                saved_list = self.request.user.saved_filter_lists.filter(
-                    id=saved_list_id
-                ).first()
-                filter_params = saved_list.get_filter_params()
-                merged_params = QueryDict(mutable=True)
-                for key, values in filter_params.items():
-                    for value in values:
-                        merged_params.appendlist(key, value)
-
-                search_keys = [
-                    "field",
-                    "operator",
-                    "value",
-                    "start_value",
-                    "end_value",
-                    "search",
-                ]
-                for key, values in self.request.GET.lists():
-                    if key in search_keys:
+                saved_list = (
+                    SavedFilterList.all_objects.filter(id=saved_list_id)
+                    .filter(Q(user=self.request.user) | Q(is_public=True))
+                    .first()
+                )
+                if saved_list:
+                    filter_params = saved_list.get_filter_params()
+                    merged_params = QueryDict(mutable=True)
+                    for key, values in filter_params.items():
                         for value in values:
                             merged_params.appendlist(key, value)
 
-                if self.filterset_class:
-                    self.filterset = self.filterset_class(
-                        merged_params, queryset=queryset, request=self.request
-                    )
-                    queryset = self.filterset.filter_queryset(queryset)
+                    search_keys = [
+                        "field",
+                        "operator",
+                        "value",
+                        "start_value",
+                        "end_value",
+                        "search",
+                    ]
+                    for key, values in self.request.GET.lists():
+                        if key in search_keys:
+                            for value in values:
+                                merged_params.appendlist(key, value)
+
+                    if self.filterset_class:
+                        self.filterset = self.filterset_class(
+                            merged_params, queryset=queryset, request=self.request
+                        )
+                        queryset = self.filterset.filter_queryset(queryset)
             except Exception:
                 pass
 
@@ -727,10 +967,17 @@ class HorillaListView(ListView):
 
         return super().render_to_response(context, **response_kwargs)
 
-    def _get_model_fields(self):
-        """Extract model fields with metadata for filtering UI."""
-        if self._model_fields_cache is not None:
-            return self._model_fields_cache
+    def _get_model_fields(self, include_properties=False):
+        """Extract model fields with metadata for filtering UI.
+
+        Args:
+            include_properties: If True, include model properties in the result.
+                              Default False to exclude properties from filters.
+        """
+        # Use separate cache for properties vs non-properties
+        cache_key = f"_model_fields_cache_{include_properties}"
+        if hasattr(self, cache_key) and getattr(self, cache_key) is not None:
+            return getattr(self, cache_key)
 
         BOOLEAN_CHOICES = [
             {"value": "True", "label": "Yes"},
@@ -862,37 +1109,35 @@ class HorillaListView(ListView):
                 }
             )
 
-        property_labels = getattr(self.model, "PROPERTY_LABELS", None)
-        if not property_labels:
-            property_labels = {
-                name.replace("get_", "", 1): name.replace("get_", "", 1)
-                .replace("_", " ")
-                .title()
+        # Only include properties if explicitly requested (for export) AND model defines PROPERTY_LABELS
+        if include_properties:
+            property_labels = getattr(self.model, "PROPERTY_LABELS", None)
+            # Only process properties if PROPERTY_LABELS is explicitly defined on the model
+            if property_labels:
                 for name, member in inspect.getmembers(
                     self.model, predicate=lambda x: isinstance(x, property)
-                )
-            }
+                ):
+                    label_key = (
+                        name.replace("get_", "", 1) if name.startswith("get_") else name
+                    )
+                    # Exclude histories, full_histories, and pk properties from export additional columns
+                    if name in exclude_from_export or label_key in exclude_from_export:
+                        continue
+                    # Only include properties that are explicitly defined in PROPERTY_LABELS
+                    if label_key in property_labels:
+                        model_fields.append(
+                            {
+                                "name": name,
+                                "type": "text",
+                                "verbose_name": property_labels[label_key],
+                                "choices": [],
+                                "operators": [],
+                                "is_property": True,
+                            }
+                        )
 
-        for name, member in inspect.getmembers(
-            self.model, predicate=lambda x: isinstance(x, property)
-        ):
-            label_key = name.replace("get_", "", 1) if name.startswith("get_") else name
-            # Exclude histories and full_histories properties from export additional columns
-            if name in exclude_from_export or label_key in exclude_from_export:
-                continue
-            if label_key in property_labels:
-                model_fields.append(
-                    {
-                        "name": name,
-                        "type": "text",
-                        "verbose_name": property_labels[label_key],
-                        "choices": [],
-                        "operators": [],
-                        "is_property": True,
-                    }
-                )
-
-        self._model_fields_cache = model_fields
+        # Cache the result
+        setattr(self, cache_key, model_fields)
         return model_fields
 
     def handle_field_change(self, request, field_name, row_id):
@@ -1648,6 +1893,157 @@ class HorillaListView(ListView):
                 except json.JSONDecodeError as e:
                     return HttpResponse("Invalid JSON data for record_ids", status=400)
             return HttpResponse("Invalid request: Missing required fields", status=400)
+
+        if action == "add_quick_filter":
+            # Get and validate field names
+            field_names = request.POST.getlist("field_name")
+            available_fields = {
+                f["name"] for f in self.get_available_quick_filter_fields()
+            }
+            valid_field_names = [fn for fn in field_names if fn in available_fields]
+
+            if not valid_field_names:
+                # Return error modal
+                existing_field_names = set(
+                    self.get_quick_filters().values_list("field_name", flat=True)
+                )
+                available_fields_list = [
+                    f
+                    for f in self.get_available_quick_filter_fields()
+                    if f["name"] not in existing_field_names
+                ]
+
+                context = {
+                    "available_fields": available_fields_list,
+                    "search_url": self.search_url or request.path,
+                    "view_id": self.view_id,
+                    "error_message": "Please select at least one valid field.",
+                }
+                response = render(
+                    request, "partials/add_quick_filter_form.html", context
+                )
+                # Swap into modalBox (not quick-filters-bar); response has #add-quick-filter-container
+                response["HX-Reswap"] = "innerHTML"
+                response["HX-Retarget"] = "#modalBox"
+                response["HX-Reselect"] = "#add-quick-filter-container"
+                return response
+
+            # Bulk create filters
+            base_count = QuickFilter.objects.filter(
+                user=request.user,
+                app_label=self.model._meta.app_label,
+                model_name=self.model.__name__,
+            ).count()
+
+            # Get existing filters to avoid duplicates
+            existing = set(
+                QuickFilter.objects.filter(
+                    user=request.user,
+                    app_label=self.model._meta.app_label,
+                    model_name=self.model.__name__,
+                    field_name__in=valid_field_names,
+                ).values_list("field_name", flat=True)
+            )
+
+            # Create only new filters
+            new_filters = [
+                QuickFilter(
+                    user=request.user,
+                    app_label=self.model._meta.app_label,
+                    model_name=self.model.__name__,
+                    field_name=field_name,
+                    display_order=base_count + idx,
+                )
+                for idx, field_name in enumerate(valid_field_names)
+                if field_name not in existing
+            ]
+
+            if new_filters:
+                QuickFilter.objects.bulk_create(new_filters)
+
+            # Render response
+            context = self.get_context_data(object_list=self.get_queryset())
+            quick_filters_html = render_to_string(
+                "partials/quick_filters_bar.html", context, request=request
+            )
+            list_view_html = render_to_string(
+                self.template_name, context, request=request
+            )
+
+            response_html = (
+                f"{quick_filters_html}"
+                f'<div class="p-5" id="mainSession" hx-swap-oob="outerHTML">{list_view_html}</div>'
+            )
+
+            return HttpResponse(response_html)
+
+        # Handle remove quick filter
+        if action == "remove_quick_filter":
+            filter_id = request.POST.get("filter_id")
+            if not filter_id:
+                return HttpResponse(status=400)
+
+            # Delete and get field_name in one query
+            try:
+                quick_filter = QuickFilter.objects.only("field_name").get(
+                    id=filter_id, user=request.user
+                )
+                field_name = quick_filter.field_name
+                quick_filter.delete()
+            except Exception as e:
+                messages.error(request, str(e))
+                response = HttpResponse(
+                    "<div id='reload'><script>$('#reloadButton').click();</script></div>"
+                )
+                response["HX-Retarget"] = f"#tableview-{self.view_id}"
+                response["HX-Reswap"] = "innerHTML"
+                response["HX-Reselect"] = "#reload"
+                return response
+
+            # Build clean URL without the qf_{field_name} parameter
+            clean_params = request.GET.copy()
+            clean_params.pop(f"qf_{field_name}", None)
+
+            # Temporarily swap request.GET for clean queryset/rendering
+            original_get = request.GET
+            request.GET = clean_params
+
+            try:
+                # Get context with cleaned parameters
+                context = self.get_context_data(object_list=self.get_queryset())
+
+                # Render both partials
+                quick_filters_html = render_to_string(
+                    "partials/quick_filters_bar.html", context, request=request
+                )
+                list_view_html = render_to_string(
+                    self.template_name, context, request=request
+                )
+            finally:
+                # Always restore original GET
+                request.GET = original_get
+
+            # Build response HTML
+            response_html = (
+                f"{quick_filters_html}"
+                f'<div class="p-5" id="mainSession" hx-swap-oob="outerHTML">{list_view_html}</div>'
+            )
+            response = HttpResponse(response_html)
+
+            # Set URL headers
+            if self.filter_url_push:
+                clean_url = (
+                    f"{self.main_url or request.path}?{clean_params.urlencode()}"
+                    if clean_params
+                    else (self.main_url or request.path)
+                )
+                response["HX-Push-Url"] = clean_url
+                response["HX-Replace-Url"] = clean_url
+            else:
+                response["HX-Push-Url"] = "false"
+
+            return response
+
         return HttpResponse("Invalid request: Missing required fields", status=400)
 
     def handle_export(self, record_ids, columns, export_format):
@@ -1662,24 +2058,19 @@ class HorillaListView(ListView):
                 for field in self.model._meta.fields
             ]
             property_labels = getattr(self.model, "PROPERTY_LABELS", None)
-            if not property_labels:
-                property_labels = {
-                    name.replace("get_", "", 1): name.replace("get_", "", 1)
-                    .replace("_", " ")
-                    .title()
-                    for name, member in inspect.getmembers(
-                        self.model, predicate=lambda x: isinstance(x, property)
+            # Only process properties if PROPERTY_LABELS is explicitly defined on the model
+            if property_labels:
+                for name, member in inspect.getmembers(
+                    self.model, predicate=lambda x: isinstance(x, property)
+                ):
+                    label_key = (
+                        name.replace("get_", "", 1) if name.startswith("get_") else name
                     )
-                }
-
-            for name, member in inspect.getmembers(
-                self.model, predicate=lambda x: isinstance(x, property)
-            ):
-                label_key = (
-                    name.replace("get_", "", 1) if name.startswith("get_") else name
-                )
-                if label_key in property_labels:
-                    model_fields.append((str(property_labels[label_key]), name, None))
+                    # Only include properties that are explicitly defined in PROPERTY_LABELS
+                    if label_key in property_labels:
+                        model_fields.append(
+                            (str(property_labels[label_key]), name, None)
+                        )
 
             for field in self.model._meta.fields:
                 if field.choices:
@@ -1728,9 +2119,19 @@ class HorillaListView(ListView):
                 row = []
                 for _verbose_name, field_name, field in selected_fields:
                     try:
-                        value = getattr(obj, field_name, "")
+                        # Prefer display value for choice fields (e.g. lead_source, industry)
+                        # and CountryField (e.g. country) so export shows label not key
+                        display_method_name = f"get_{field_name}_display"
+                        if hasattr(obj, display_method_name):
+                            display_method = getattr(obj, display_method_name)
+                            if callable(display_method):
+                                value = display_method()
+                            else:
+                                value = getattr(obj, field_name, "")
+                        else:
+                            value = getattr(obj, field_name, "")
                         if field == "method" or callable(value):
-                            value = value()
+                            value = value() if callable(value) else value
                         elif field is None:  # This is a @property
                             # Properties already computed by getattr, no further action needed
                             pass
@@ -1747,6 +2148,36 @@ class HorillaListView(ListView):
                             )
                         elif callable(value):
                             value = value()
+                        # Format date/datetime with user's chosen format and timezone (not UTC)
+                        user = getattr(self.request, "user", None)
+                        if user and value is not None:
+                            if isinstance(value, datetime):
+                                if getattr(user, "time_zone", None):
+                                    try:
+                                        user_tz = pytz.timezone(user.time_zone)
+                                        if timezone.is_naive(value):
+                                            value = timezone.make_aware(
+                                                value, timezone.get_default_timezone()
+                                            )
+                                        value = value.astimezone(user_tz)
+                                    except Exception:
+                                        pass
+                                fmt = (
+                                    getattr(user, "date_time_format", None)
+                                    or "%Y-%m-%d %H:%M:%S"
+                                )
+                                try:
+                                    value = value.strftime(fmt)
+                                except Exception:
+                                    value = value.strftime("%Y-%m-%d %H:%M:%S")
+                            elif isinstance(value, date) and not isinstance(
+                                value, datetime
+                            ):
+                                fmt = getattr(user, "date_format", None) or "%Y-%m-%d"
+                                try:
+                                    value = value.strftime(fmt)
+                                except Exception:
+                                    value = value.strftime("%Y-%m-%d")
                         row.append(str(value) if value is not None else "")
                     except Exception as e:
                         logger.error(
@@ -2143,24 +2574,32 @@ class HorillaListView(ListView):
         if "remove_filter" in request.GET:
             return self.handle_remove_filter(request)
 
-        # Only process clear_all_filters if it's the only operation parameter
-        # Don't process if there's a search or other operations to prevent clearing search results
         if request.GET.get("clear_all_filters") == "true":
-            # Check if this is a real clear operation (no search, no other filter operations)
             has_search = request.GET.get("search", "").strip()
             has_other_ops = request.GET.get("apply_filter") or request.GET.get(
                 "remove_filter"
             )
-            # Only process if it's a standalone clear operation
             if not has_search and not has_other_ops:
                 return self.handle_clear_all_filters(request)
 
         if request.GET.get("remove_filter_field") == "true":
             return HttpResponse("")
 
-        # Handle HTMX requests
         if request.headers.get("HX-Request") == "true":
-            # Handle field change
+            if request.GET.get("show_add_quick_filter") == "true":
+                available_fields = self.get_available_quick_filter_fields()
+                existing_filters = self.get_quick_filters()
+                existing_field_names = [qf.field_name for qf in existing_filters]
+                available_fields = [
+                    f for f in available_fields if f["name"] not in existing_field_names
+                ]
+                context = {
+                    "available_fields": available_fields,
+                    "search_url": self.search_url or self.request.path,
+                    "view_id": self.view_id,
+                }
+                return render(request, "partials/add_quick_filter_form.html", context)
+
             if request.GET.get("field_change") and not request.GET.get(
                 "operator_change"
             ):
@@ -2168,7 +2607,6 @@ class HorillaListView(ListView):
                 row_id = request.GET.get("row_id")
                 return self.handle_field_change(request, field_name, row_id)
 
-            # Handle operator change
             if request.GET.get("operator_change"):
                 field_name = request.GET.get("field")
                 operator = request.GET.get("operator")
@@ -2186,12 +2624,9 @@ class HorillaListView(ListView):
         if not self.filter_url_push:
             return
 
-        # Only add script to list view responses (mainSession), not nav view responses
-        # Check if this is a list view by checking template name
         if hasattr(self, "template_name") and self.template_name != "list_view.html":
             return
 
-        # Only add script once globally, check if handler already exists
         url = f"{main_url}?{cleaned_query_string}" if cleaned_query_string else main_url
         reload_script = f"""<script>
             if (!window._filterReloadHandlerAdded) {{
@@ -2563,22 +2998,31 @@ class HorillaListView(ListView):
             context["ordered_ids_key"] = self.ordered_ids_key
             context["ordered_ids"] = self.request.session.get(self.ordered_ids_key, [])
 
-        filter_fields = self._get_model_fields()
+        # Get filter fields without properties (for filter dropdown)
+        filter_fields = self._get_model_fields(include_properties=False)
+        # Get export fields with properties (for export additional columns)
+        export_additional_fields = self._get_model_fields(include_properties=True)
         view_type = self.request.GET.get("view_type") or self.get_default_view_type()
         context["saved_list_name"] = None  # default
 
         if view_type and view_type.startswith("saved_list_"):
             try:
                 saved_list_id = int(view_type.split("_")[2])
-                saved_list = self.request.user.saved_filter_lists.filter(
-                    id=saved_list_id
-                ).first()
+                saved_list = (
+                    SavedFilterList.all_objects.filter(id=saved_list_id)
+                    .filter(Q(user=self.request.user) | Q(is_public=True))
+                    .first()
+                )
                 if saved_list:
                     context["saved_list_name"] = saved_list.name
+                    context["saved_list_is_owner"] = (
+                        saved_list.user_id == self.request.user.id
+                    )
             except (IndexError, ValueError):
                 pass
         context["view_type"] = view_type
         context["filter_fields"] = filter_fields
+        context["export_additional_fields"] = export_additional_fields
         context["filter_push_url"] = "true" if self.filter_url_push else "false"
         context["model_verbose_name"] = self.model._meta.verbose_name_plural
         context["model_name"] = self.model.__name__
@@ -2714,6 +3158,34 @@ class HorillaListView(ListView):
                             display_value = raw_value
                     except Exception:
                         display_value = raw_value
+
+                start_value = (
+                    query_params.get("start_value", [None])[i]
+                    if i < len(query_params.get("start_value", []))
+                    else None
+                )
+                end_value = (
+                    query_params.get("end_value", [None])[i]
+                    if i < len(query_params.get("end_value", []))
+                    else None
+                )
+                field_type = field_info.get("type")
+
+                def _parse_filter_value(val, ftype):
+                    if not val or ftype not in ("date", "datetime", "time"):
+                        return None
+                    if ftype == "datetime":
+                        return parse_datetime(val)
+                    if ftype == "date":
+                        return parse_date(val)
+                    if ftype == "time":
+                        return parse_time(val)
+                    return None
+
+                value_obj = _parse_filter_value(raw_value, field_type)
+                start_value_obj = _parse_filter_value(start_value, field_type)
+                end_value_obj = _parse_filter_value(end_value, field_type)
+
                 row = {
                     "row_id": i,
                     "field": field,
@@ -2724,16 +3196,11 @@ class HorillaListView(ListView):
                     ),
                     "value": raw_value,
                     "raw_value": display_value,
-                    "start_value": (
-                        query_params.get("start_value", [None])[i]
-                        if i < len(query_params.get("start_value", []))
-                        else None
-                    ),
-                    "end_value": (
-                        query_params.get("end_value", [None])[i]
-                        if i < len(query_params.get("end_value", []))
-                        else None
-                    ),
+                    "start_value": start_value,
+                    "end_value": end_value,
+                    "value_obj": value_obj,
+                    "start_value_obj": start_value_obj,
+                    "end_value_obj": end_value_obj,
                     "operators": field_operators.get(field, []),
                     "type": field_types.get(field, []),
                     "choices": choices.get(field, []),
@@ -2823,6 +3290,78 @@ class HorillaListView(ListView):
         context["table_height_as_class"] = self.table_height_as_class
         context["table_height"] = self.table_height
         context["save_to_list_option"] = self.save_to_list_option
+        if self.enable_quick_filters:
+            # Get active quick filters with their choices
+            quick_filters = []
+            for qf in self.get_quick_filters():
+                choices = self.get_quick_filter_choices(qf.field_name)
+                field_info = next(
+                    (
+                        f
+                        for f in self.get_available_quick_filter_fields()
+                        if f["name"] == qf.field_name
+                    ),
+                    {
+                        "verbose_name": qf.field_name.replace("_", " ").title(),
+                        "type": "text",
+                    },
+                )
+
+                quick_filters.append(
+                    {
+                        "id": qf.id,
+                        "field_name": qf.field_name,
+                        "verbose_name": field_info.get("verbose_name", qf.field_name),
+                        "type": field_info.get("type", "text"),
+                        "choices": choices,
+                        "selected_value": self.request.GET.get(
+                            f"qf_{qf.field_name}", ""
+                        ),
+                    }
+                )
+
+            # Get available fields that aren't already added
+            active_field_names = [qf["field_name"] for qf in quick_filters]
+            available_fields = [
+                f
+                for f in self.get_available_quick_filter_fields()
+                if f["name"] not in active_field_names
+            ]
+
+            context["quick_filters"] = quick_filters
+            context["enable_quick_filters"] = True
+            context["available_quick_filter_fields"] = available_fields
+
+            # Calculate height adjustment based on number of quick filter rows
+            # Quick filters use: 1 col (mobile), 2 cols (md), 4 cols (lg)
+            # Base: 1-4 filters (1 row on lg) = 285px
+            # For 5+ filters, scale proportionally based on rows
+            num_filters = len(quick_filters)
+            if num_filters > 0:
+                if num_filters <= 4:
+                    # 1-4 filters = 1 row on large screens = 285px
+                    context["quick_filters_height_adjustment"] = 285
+                else:
+                    # 5+ filters: calculate rows based on lg grid (4 columns)
+                    # Each additional row adds ~50px
+                    rows_lg = (num_filters + 3) // 4  # Ceiling division for 4 columns
+                    base_height = 285  # Base for 1-4 filters (1 row)
+                    height_per_row = 50  # Additional height per row
+                    additional_rows = (
+                        rows_lg - 1
+                    )  # Subtract 1 since first row is already in base
+                    total_height_reduction = base_height + (
+                        additional_rows * height_per_row
+                    )
+
+                    context["quick_filters_height_adjustment"] = total_height_reduction
+            else:
+                context["quick_filters_height_adjustment"] = 245
+        else:
+            context["enable_quick_filters"] = False
+            context["quick_filters"] = []
+            context["available_quick_filter_fields"] = []
+            context["quick_filters_height_adjustment"] = 0
         return context
 
 
@@ -5513,7 +6052,7 @@ class HorillaHistorySectionView(DetailView):
 
     template_name = "history_tab.html"
     context_object_name = "obj"
-    paginate_by = 2
+    paginate_by = 10
     filter_form_class = HorillaHistoryForm
 
     def dispatch(self, request, *args, **kwargs):
@@ -5522,9 +6061,6 @@ class HorillaHistorySectionView(DetailView):
         except Exception as e:
             messages.error(self.request, e)
             return HttpResponse(headers={"HX-Refresh": "true"})
-            # return HttpResponse(
-            #     "<script>$('#reloadButton').click();</script>"
-            # )
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
