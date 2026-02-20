@@ -44,7 +44,8 @@
                     <div class="col-span-12 md:col-span-6">
                         <div class="flex flex-col gap-1">
                             <label for="" class="text-xs text-color-600">{% trans "Select Module" %}</label>
-                            <select name="module" class="js-example-basic-single headselect w-full" required >
+                            <select name="module" class="js-example-basic-single headselect w-full" required
+                                _="on change set #downloadTemplateBtn.disabled to my.value === ''">
                                 <option value="">{% trans "Choose Module" %}</option>
                                 {% for module in modules %}
                                     <option value="{{ module.name }}"
@@ -99,7 +100,7 @@
                                     hx-vals='js:{module: document.querySelector("select[name=module]").value}'
                                     hx-on::after-request="if(event.detail.successful && typeof openContentModal !== 'undefined'){openContentModal()}"
                                     _="on click if not me.disabled and document.querySelector('select[name=module]').value trigger doRequest"
-                                    disabled>
+                                    {% if not selected_module %}disabled{% endif %}>
                                 <i class="fa-solid fa-download text-white"></i>
                                 <span>{% trans "Download Template" %}</span>
                             </button>
@@ -139,32 +140,12 @@
             }
         }
 
-        function updateDownloadButtonState() {
-            const moduleSelect = document.querySelector("select[name='module']");
-            const downloadBtn = document.getElementById("downloadTemplateBtn");
-            if (moduleSelect && downloadBtn) {
-                const isDisabled = !moduleSelect.value;
-                downloadBtn.disabled = isDisabled;
-            }
-        }
-
         attachFileInputListener();
-        updateDownloadButtonState();
 
         document.addEventListener("htmx:afterSwap", function (event) {
             if (event.detail.target.id === "import-container") {
                 attachFileInputListener();
-                updateDownloadButtonState();
-                const moduleSelect = document.querySelector("select[name='module']");
-                if (moduleSelect) {
-                    moduleSelect.addEventListener("change", updateDownloadButtonState);
-                }
             }
         });
-
-        const moduleSelect = document.querySelector("select[name='module']");
-        if (moduleSelect) {
-            moduleSelect.addEventListener("change", updateDownloadButtonState);
-        }
     </script>
 </div>
