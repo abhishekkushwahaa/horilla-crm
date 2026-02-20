@@ -36,6 +36,7 @@ from horilla_generics.views import (
     HorillaDetailSectionView,
     HorillaDetailTabView,
     HorillaDetailView,
+    HorillaGroupByView,
     HorillaHistorySectionView,
     HorillaKanbanView,
     HorillaListView,
@@ -63,6 +64,7 @@ class ContactView(LoginRequiredMixin, HorillaView):
     nav_url = reverse_lazy("contacts:contacts_navbar")
     list_url = reverse_lazy("contacts:contact_list_view")
     kanban_url = reverse_lazy("contacts:contact_kanban_view")
+    group_by_url = reverse_lazy("contacts:contact_group_by_view")
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -79,6 +81,7 @@ class ContactNavbar(LoginRequiredMixin, HorillaNavView):
     search_url = reverse_lazy("contacts:contact_list_view")
     main_url = reverse_lazy("contacts:contacts_view")
     kanban_url = reverse_lazy("contacts:contact_kanban_view")
+    group_by_url = reverse_lazy("contacts:contact_group_by_view")
     model_str = "contacts.Contact"
     model_name = "Contact"
     model_app_label = "contacts"
@@ -219,6 +222,66 @@ class ContactListView(LoginRequiredMixin, HorillaListView):
             query_params["section"] = self.request.GET.get("section")
         query_string = urlencode(query_params)
 
+        attrs = {
+            "hx-get": f"{{get_detail_url}}?{query_string}",
+            "hx-target": "#mainContent",
+            "hx-swap": "outerHTML",
+            "hx-push-url": "true",
+            "hx-select": "#mainContent",
+            "permission": "contacts.view_contact",
+            "own_permission": "contacts.view_own_contact",
+            "owner_field": "contact_owner",
+        }
+        return [
+            {
+                "first_name": {
+                    **attrs,
+                }
+            }
+        ]
+
+
+@method_decorator(htmx_required, name="dispatch")
+@method_decorator(
+    permission_required_or_denied(
+        ["contacts.view_contact", "contacts.view_own_contact"]
+    ),
+    name="dispatch",
+)
+class ContactGroupByView(LoginRequiredMixin, HorillaGroupByView):
+    """
+    Contact Group By view
+    """
+
+    model = Contact
+    view_id = "contacts-group-by"
+    filterset_class = ContactFilter
+    search_url = reverse_lazy("contacts:contact_list_view")
+    main_url = reverse_lazy("contacts:contacts_view")
+    enable_quick_filters = True
+    group_by_field = "contact_source"
+
+    columns = ["first_name", "last_name", "title", "email", "phone", "contact_source"]
+    actions = ContactListView.actions
+
+    def no_record_add_button(self):
+        """Button to add a new contact if no records exist"""
+        if self.request.user.has_perm(
+            "contacts.add_contact"
+        ) or self.request.user.has_perm("contacts.add_own_contact"):
+            return {
+                "url": f"""{reverse_lazy('contacts:contact_create_form')}?new=true""",
+                "attrs": 'id="contact-create"',
+            }
+        return None
+
+    @cached_property
+    def col_attrs(self):
+        """Attributes for columns in the contact group-by view"""
+        query_params = {}
+        if "section" in self.request.GET:
+            query_params["section"] = self.request.GET.get("section")
+        query_string = urlencode(query_params)
         attrs = {
             "hx-get": f"{{get_detail_url}}?{query_string}",
             "hx-target": "#mainContent",
@@ -970,8 +1033,53 @@ class ContactRelatedListsTab(LoginRequiredMixin, HorillaRelatedListSectionView):
                         }
                     }
                 ],
+                "custom_buttons": [
+                    {
+                        "label": _("View Hierarchy"),
+                        "url": reverse_lazy("contacts:contact_hierarchy"),
+                        "attrs": """
+                                        hx-target="#modalBox"
+                                        hx-swap="innerHTML"
+                                        onclick="openModal()"
+                                        hx-indicator="#modalBox"
+                                    """,
+                        "icon": "fa-solid fa-sitemap",
+                        "class": "text-xs px-4 py-1.5 bg-white border border-primary-600 text-primary-600 rounded-md transition duration-300",
+                    },
+                ],
             },
         }
+
+
+def _build_contact_tree(contact):
+    """Build tree of contact and descendants for <details> hierarchy."""
+    return {
+        "contact": contact,
+        "children": [_build_contact_tree(c) for c in contact.child_contacts.all()],
+    }
+
+
+@method_decorator(htmx_required, name="dispatch")
+@method_decorator(
+    permission_required_or_denied(
+        ["contacts.view_contact", "contacts.view_own_contact"]
+    ),
+    name="dispatch",
+)
+class ContactHierarchyView(LoginRequiredMixin, View):
+    """Modal view showing contact hierarchy with expand/collapse (no JS)."""
+
+    def get(self, request, *args, **kwargs):
+        contact_id = request.GET.get("id")
+        if not contact_id:
+            return render(request, "error/403.html", {"modal": True})
+        contact = get_object_or_404(Contact, pk=contact_id)
+        root = _build_contact_tree(contact)
+        return render(
+            request,
+            "contact_hierarchy_modal.html",
+            {"root": root},
+        )
 
 
 @method_decorator(htmx_required, name="dispatch")

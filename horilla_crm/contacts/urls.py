@@ -114,4 +114,14 @@ urlpatterns = [
         views.RelatedContactDeleteView.as_view(),
         name="delete_related_accounts",
     ),
+    path(
+        "contact-hierarchy/",
+        views.ContactHierarchyView.as_view(),
+        name="contact_hierarchy",
+    ),
+    path(
+        "contact-group-by/",
+        views.ContactGroupByView.as_view(),
+        name="contact_group_by_view",
+    ),
 ]
