@@ -3,7 +3,6 @@
 
 {% block extra_css %}
 <style>
-    /* Force high visibility for AI Chat */
     .chat-bubble-ai { color: #1f2937 !important; }
     .dark .chat-bubble-ai { color: #f3f4f6 !important; }
     
@@ -131,9 +130,37 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Chat History -->
+                {% for chat in chat_history %}
+                    <!-- User Message -->
+                    <div class="flex justify-end animate-fade-in mb-6">
+                        <div class="max-w-[80%] flex flex-row-reverse gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 flex items-center justify-center flex-shrink-0 text-gray-600 dark:text-gray-300">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="p-4 rounded-xl text-sm bg-primary-600 text-white rounded-2xl rounded-tr-none shadow-md font-semibold">
+                                <p class="leading-relaxed whitespace-pre-wrap">{{ chat.message }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Message -->
+                    <div class="flex justify-start animate-fade-in mb-6">
+                        <div class="max-w-[80%] flex gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0 p-1.5 overflow-hidden shadow-md">
+                                <img src="{% static 'assets/img/logo.svg' %}" class="w-full h-full brightness-0 invert object-contain">
+                            </div>
+                            <div class="p-4 rounded-xl text-sm bg-white dark:bg-gray-900 chat-bubble-ai rounded-2xl rounded-tl-none border border-gray-200 dark:border-gray-800 shadow-sm font-semibold">
+                                <div class="ai-response-content parsed-history-content" data-raw="{{ chat.response|escapejs }}">
+                                   
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
             </div>
 
-            <!-- Input Area -->
             <div class="p-6 bg-white dark:bg-gray-900 border-t-2 border-gray-100 dark:border-gray-800">
                 <div class="max-w-4xl mx-auto relative">
                     <div class="relative flex items-center bg-white dark:bg-black rounded-xl border-2 border-gray-900 dark:border-gray-700 focus-within:ring-2 focus-within:ring-primary-500/30 transition-all p-1 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
@@ -266,10 +293,10 @@
         }
     }
 
-    function clearChat() {
+    async function clearChat() {
         Swal.fire({
             title: '{% trans "Clear conversation?" %}',
-            text: '{% trans "All messaging history will be removed." %}',
+            text: '{% trans "All messaging history will be removed from the database." %}',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#e54f38',
@@ -278,20 +305,40 @@
             cancelButtonText: '{% trans "Cancel" %}',
             background: document.documentElement.classList.contains('dark') ? '#111827' : '#fff',
             color: document.documentElement.classList.contains('dark') ? '#fff' : '#111827'
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                document.getElementById('chatMessages').innerHTML = '';
-                appendMessage('ai', '{% trans "Chat history cleared. How can I help you today?" %}');
-                Swal.fire({
-                    title: '{% trans "Cleared!" %}',
-                    text: '{% trans "Conversation has been reset." %}',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
+                try {
+                    const response = await fetch('{% url "horilla_ai:clear_chat_api" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        document.getElementById('chatMessages').innerHTML = '';
+                        appendMessage('ai', '{% trans "Chat history cleared. How can I help you today?" %}');
+                        Swal.fire({
+                            title: '{% trans "Cleared!" %}',
+                            text: '{% trans "Conversation has been reset." %}',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire('Error', 'Could not clear history', 'error');
+                }
             }
         });
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.parsed-history-content').forEach(el => {
+            const raw = el.getAttribute('data-raw');
+            el.innerHTML = marked.parse(JSON.parse(`"${raw}"`));
+        });
+        const container = document.getElementById('chatMessages');
+        container.scrollTop = container.scrollHeight;
+    });
 
     document.getElementById('chatInput').addEventListener('input', function() {
         this.style.height = 'auto';

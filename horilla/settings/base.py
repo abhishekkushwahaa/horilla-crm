@@ -403,3 +403,14 @@ ALLOWED_LANGUAGES = [
 AUDITLOG_LOGENTRY_MODEL = "auditlog.LogEntry"
 
 BRANDING_MODULE = None
+
+# -----------------------------------------------------------------------------
+# AI Assistant Settings
+# -----------------------------------------------------------------------------
+GEMINI_API_KEY = env("GEMINI_API_KEY", default=None)
+AI_MODEL_PRICING = {
+    'gemini-3-flash-preview': 0.075,
+    'gpt-4o': 5.00,
+    'claude-3-5-sonnet': 3.00,
+    'default': 0.10
+}

@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='horillauser',
             name='enable_ai',
-            field=models.BooleanField(default=False, help_text='Toggle the AI assistant feature across the system', verbose_name='Enable AI Assistant'),
+            field=models.BooleanField(default=False, help_text='Toggle the AI assistant feature across the system', verbose_name='Enable CRM AI'),
         ),
     ]

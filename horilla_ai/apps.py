@@ -20,8 +20,12 @@ class HorillaAiConfig(AppConfig):
         try:
             from django.urls import include, path
             from horilla.urls import urlpatterns
-            if not any(hasattr(p, "pattern") and str(p.pattern) == "ai/" for p in urlpatterns):
-                urlpatterns.append(path("ai/", include("horilla_ai.urls")))
+            
+            if not any(getattr(p, "namespace", None) == "horilla_ai" for p in urlpatterns):
+                urlpatterns.append(
+                    path("ai/", include("horilla_ai.urls", namespace="horilla_ai"))
+                )
+            
             __import__("horilla_ai.menu")
         except Exception as e:
             import logging
