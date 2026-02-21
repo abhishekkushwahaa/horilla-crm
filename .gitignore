@@ -156,3 +156,7 @@ whoosh_index/
 
 .init_password
 .encryption_key
+<<<<<<< HEAD
+=======
+find_nulls.py
+>>>>>>> aaab82c (feat-add/horilla-ai)

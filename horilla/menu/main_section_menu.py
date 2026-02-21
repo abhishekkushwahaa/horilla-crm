@@ -35,11 +35,15 @@ def get_main_section_menu(request=None) -> List[Dict]:
 
     pages.sort(
         key=lambda x: (
+<<<<<<< HEAD
             (
                 0
                 if x["position"] is not None and x["position"] >= 0
                 else 1 if x["position"] is None else 2
             ),
+=======
+            0 if x["position"] is not None else 1,
+>>>>>>> aaab82c (feat-add/horilla-ai)
             x["position"] if x["position"] is not None else 0,
         )
     )

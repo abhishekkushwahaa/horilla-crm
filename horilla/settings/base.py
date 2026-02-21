@@ -43,6 +43,10 @@ ENVIRONMENT = env("ENVIRONMENT")
 SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
+<<<<<<< HEAD
+=======
+GEMINI_API_KEY = env("GEMINI_API_KEY", default=None)
+>>>>>>> aaab82c (feat-add/horilla-ai)
 
 # -----------------------------------------------------------------------------
 #  Installed Apps Organization
