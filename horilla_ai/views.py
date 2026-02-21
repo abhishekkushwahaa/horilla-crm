@@ -30,7 +30,6 @@ class ChatAPIView(View):
             message = data.get('message', '')
             model_id = data.get('model', 'gemini-3-flash-preview')
             
-            # Fetch CRM stats for context
             stats = {
                 'leads': apps.get_model('leads', 'Lead').objects.count() if apps.is_installed('horilla_crm.leads') else 0,
                 'accounts': apps.get_model('accounts', 'Account').objects.count() if apps.is_installed('horilla_crm.accounts') else 0,
@@ -38,8 +37,6 @@ class ChatAPIView(View):
             }
 
             if model_id == 'gemini-3-flash-preview':
-                # Dynamically use the model name provided by the user
-                # Preview models usually require v1beta
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={settings.GEMINI_API_KEY}"
                 
                 prompt = f"""
@@ -71,7 +68,6 @@ class ChatAPIView(View):
                     error_msg = res_data.get('error', {}).get('message', 'Unknown API Error')
                     response_text = f"API Error: {error_msg}"
             else:
-                # Mock response for premium models (shouldn't be reached if UI logic works)
                 response_text = f"The {model_id} model is currently in mock mode. Please switch to Gemini for real updates."
 
             return JsonResponse({'status': 'success', 'response': response_text, 'model': model_id})

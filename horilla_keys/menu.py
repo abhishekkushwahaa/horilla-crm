@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 This module registers Floating, Settings, My Settings, and Main Section menus
 for the horilla_keys app
@@ -30,7 +29,6 @@ class ShortKeySettings:
         "hx-select": "#short-key-view",
         "hx-select-oob": "#my-settings-sidebar",
     }
-=======
 """
 This module registers Floating, Settings, My Settings, and Main Section menus
 for the horilla_keys app
@@ -62,4 +60,3 @@ class ShortKeySettings:
         "hx-select": "#short-key-view",
         "hx-select-oob": "#my-settings-sidebar",
     }
->>>>>>> aaab82c (feat-add/horilla-ai)

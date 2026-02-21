@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 Forms for the horilla_keys app
 """
@@ -141,7 +140,7 @@ class ShortcutKeyForm(HorillaModelForm):
                 self.add_error(None, self.errors[field])
                 del self.errors[field]
         return cleaned
-=======
+
 """
 Forms for the horilla_keys app
 """
@@ -284,4 +283,3 @@ class ShortcutKeyForm(HorillaModelForm):
                 self.add_error(None, self.errors[field])
                 del self.errors[field]
         return cleaned
->>>>>>> aaab82c (feat-add/horilla-ai)

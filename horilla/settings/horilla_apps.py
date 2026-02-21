@@ -10,9 +10,6 @@ INSTALLED_APPS.extend(
         "horilla_crm.campaigns",
         "horilla_crm.opportunities",
         "horilla_crm.forecast",
-<<<<<<< HEAD
-=======
         "horilla_ai",
->>>>>>> aaab82c (feat-add/horilla-ai)
     ]
 )

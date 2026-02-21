@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 URLs for the horilla_keys app
 """
@@ -28,7 +27,7 @@ urlpatterns = [
     ),
     path("short-key-data/", views.ShortKeyDataView.as_view(), name="short_key_data"),
 ]
-=======
+
 """
 URLs for the horilla_keys app
 """
@@ -58,4 +57,3 @@ urlpatterns = [
     ),
     path("short-key-data/", views.ShortKeyDataView.as_view(), name="short_key_data"),
 ]
->>>>>>> aaab82c (feat-add/horilla-ai)

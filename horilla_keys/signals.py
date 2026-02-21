@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 Signals for the horilla_keys app
 """
@@ -44,7 +43,7 @@ def create_all_default_shortcuts(sender, instance, created, **kwargs):
     ]
 
     ShortcutKey.objects.bulk_create(shortcuts, ignore_conflicts=True)
-=======
+
 """
 Signals for the horilla_keys app
 """
@@ -90,4 +89,3 @@ def create_all_default_shortcuts(sender, instance, created, **kwargs):
     ]
 
     ShortcutKey.objects.bulk_create(shortcuts, ignore_conflicts=True)
->>>>>>> aaab82c (feat-add/horilla-ai)

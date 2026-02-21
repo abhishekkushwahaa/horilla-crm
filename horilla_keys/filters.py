@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 Filters for the horilla_keys app.
 """
@@ -24,7 +23,7 @@ class ShortKeyFilter(HorillaFilterSet):
         fields = "__all__"
         exclude = ["additional_info"]
         search_fields = ["page"]
-=======
+
 """
 Filters for the horilla_keys app.
 """
@@ -50,4 +49,3 @@ class ShortKeyFilter(HorillaFilterSet):
         fields = "__all__"
         exclude = ["additional_info"]
         search_fields = ["page"]
->>>>>>> aaab82c (feat-add/horilla-ai)

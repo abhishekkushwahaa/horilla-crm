@@ -1,7 +1,7 @@
 ﻿{% extends "index.html" %}
 {% load static i18n horilla_tags %}
 
-{% block content %}
+{% block extra_css %}
 <style>
     /* Force high visibility for AI Chat */
     .chat-bubble-ai { color: #1f2937 !important; }
@@ -13,6 +13,38 @@
     .chat-header-title { color: #111827 !important; }
     .dark .chat-header-title { color: #ffffff !important; }
 
+    /* Markdown Styling */
+    .ai-response-content {
+        font-family: inherit;
+    }
+    .ai-response-content p { margin-bottom: 0.75rem; }
+    .ai-response-content p:last-child { margin-bottom: 0; }
+    .ai-response-content ul, .ai-response-content ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
+    .ai-response-content ul { list-style-type: disc; }
+    .ai-response-content ol { list-style-type: decimal; }
+    .ai-response-content li { margin-bottom: 0.25rem; }
+    .ai-response-content code { 
+        background-color: rgba(0,0,0,0.05); 
+        padding: 0.2rem 0.4rem; 
+        border-radius: 4px; 
+        font-size: 0.9em;
+    }
+    .dark .ai-response-content code { background-color: rgba(255,255,255,0.1); }
+    .ai-response-content pre {
+        background-color: #1a1a1a;
+        color: #fff;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin-bottom: 0.75rem;
+    }
+    .ai-response-content h1, .ai-response-content h2, .ai-response-content h3 {
+        font-weight: bold;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .ai-response-content strong { font-weight: 800; }
+
     /* Theme-aware Model Selector */
     #modelSelector {
         color: #000000 !important;
@@ -21,10 +53,10 @@
         -moz-appearance: none !important;
         appearance: none !important;
         background-image: none !important;
-        background: white !important; /* Force white background in light mode */
+        background: white !important;
     }
     .dark #modelSelector {
-        background: #1f2937 !important; /* Force dark background in dark mode */
+        background: #1f2937 !important;
     }
     #modelSelector::-ms-expand {
         display: none !important;
@@ -37,7 +69,6 @@
     #modelSelector option { color: #000000; background-color: #ffffff; }
     .dark #modelSelector option { color: #ffffff; background-color: #111827; }
 
-    /* Centered Chevron Icon */
     .chevron-icon { color: #000000 !important; }
     .dark .chevron-icon { color: #ffffff !important; }
 
@@ -46,7 +77,9 @@
     #chatMessages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 20px; }
     .dark #chatMessages::-webkit-scrollbar-thumb { background: #4b5563; }
 </style>
+{% endblock extra_css %}
 
+{% block content %}
 <div class="flex modelcontent">
     {% include "components/sub_sidebar.html" %}
     <div id="mainContent" class="custom-scroll flex-[1_0] leftspace transition-all duration-300 ease-in-out pt-0 overflow-hidden bg-[#f9fafb] dark:bg-black">
@@ -121,8 +154,9 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-    const logoUrl = "{% static 'assets/img/logo.svg' %}";
+    const logoUrl = "{% static 'assets/icons/logo.png' %}";
 
     function appendMessage(role, text) {
         const container = document.getElementById('chatMessages');
@@ -141,11 +175,18 @@
                 <img src="${logoUrl}" class="w-full h-full brightness-0 invert object-contain">
                </div>`;
 
+        let displayContent = text;
+        if (role === 'ai') {
+            displayContent = `<div class="ai-response-content">${marked.parse(text)}</div>`;
+        } else {
+            displayContent = `<p class="leading-relaxed whitespace-pre-wrap">${text}</p>`;
+        }
+
         div.innerHTML = `
             <div class="max-w-[80%] flex ${role === 'user' ? 'flex-row-reverse' : ''} gap-4">
                 ${iconDiv}
                 <div class="p-4 rounded-xl text-sm ${contentClass}">
-                    <p class="leading-relaxed whitespace-pre-wrap">${text}</p>
+                    ${displayContent}
                 </div>
             </div>
         `;
@@ -171,10 +212,8 @@
                 background: document.documentElement.classList.contains('dark') ? '#111827' : '#fff',
                 color: document.documentElement.classList.contains('dark') ? '#fff' : '#111827'
             }).then((result) => {
-                // Revert to free model regardless for now
                 select.value = 'gemini-3-flash-preview';
                 if (result.isConfirmed) {
-                    // Placeholder for pricing page redirect
                     appendMessage('ai', '{% trans "Our subscription plans are launching soon! Stay tuned for full access to premium models." %}');
                 }
             });

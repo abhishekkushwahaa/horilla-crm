@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 AppConfig for the horilla_keys app
 """
@@ -61,7 +60,7 @@ class HorillaKeysConfig(AppConfig):
             )
 
         super().ready()
-=======
+
 """
 AppConfig for the horilla_keys app
 """
@@ -124,4 +123,3 @@ class HorillaKeysConfig(AppConfig):
             )
 
         super().ready()
->>>>>>> aaab82c (feat-add/horilla-ai)
