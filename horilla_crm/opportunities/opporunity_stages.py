@@ -16,7 +16,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models, transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
@@ -569,12 +568,11 @@ class LoadOpportunityStagesView(LoginRequiredMixin, View):
         if initialization:
             context["hx_select"] = "#sec1"
 
-        modal_content = render_to_string(
+        return render(
+            request,
             "opportunity_stage/opportunity_stages_modal.html",
             context,
-            request=request,
         )
-        return HttpResponse(modal_content)
 
 
 @method_decorator(htmx_required(), name="dispatch")
@@ -690,12 +688,11 @@ class CustomOppStagesFormView(LoginRequiredMixin, View):
         if initialization:
             context["hx_select"] = "#sec1"
 
-        modal_content = render_to_string(
+        return render(
+            request,
             "opportunity_stage/custom_stages_form_opp.html",
             context,
-            request=request,
         )
-        return HttpResponse(modal_content)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -703,7 +700,7 @@ class CustomOppStagesFormView(LoginRequiredMixin, View):
 class SaveCustomOppStagesView(LoginRequiredMixin, View):
     """View to save custom opportunity stages for a company."""
 
-    def get_signal_kwargs(self, company, request, initialization):
+    def get_signal_kwargs(self, company, request, initialization, stages=None):
         """
         Extension point: Override this method to pass additional data to signal.
         Clients can add custom data without modifying source code.
@@ -713,7 +710,26 @@ class SaveCustomOppStagesView(LoginRequiredMixin, View):
             "request": request,
             "view": self,
             "initialization": initialization,
+            "stages": stages or [],
         }
+
+    def _error_response(self, request, message):
+        """Return HTMX response that shows error in form (single-form-view style, oob into #custom-stages-error)."""
+        return render(
+            request,
+            "opportunity_stage/save_custom_opp_stages_response.html",
+            {"error_message": message},
+            status=200,
+        )
+
+    def _success_response(self, request):
+        """Return HTMX response that clears any previous error in the form."""
+        return render(
+            request,
+            "opportunity_stage/save_custom_opp_stages_response.html",
+            {"error_message": None},
+            status=200,
+        )
 
     def post(self, request, company_id):
         """Handle POST request to save custom opportunity stages."""
@@ -727,6 +743,14 @@ class SaveCustomOppStagesView(LoginRequiredMixin, View):
         stage_is_finals = request.POST.getlist("stage_is_final_custom[]")
         initialization = request.GET.get("initialization") == "True"
 
+        # Validate that all lists have the same length
+        n = len(stage_names)
+        if len(stage_orders) != n or len(stage_probabilities) != n:
+            return self._error_response(
+                request,
+                "Invalid form data: order or probability missing for one or more stages.",
+            )
+
         OpportunityStage.all_objects.filter(company=company).delete()
 
         try:
@@ -734,23 +758,33 @@ class SaveCustomOppStagesView(LoginRequiredMixin, View):
                 is_final = str(i) in stage_is_finals
                 name = stage_name.strip()
                 if not name:
-                    return HttpResponse(
-                        f'<div class="alert alert-danger">Stage name cannot be empty for stage {i+1}.</div>',
-                        status=400,
+                    return self._error_response(
+                        request, f"Stage name cannot be empty for stage {i+1}."
                     )
-                order = int(stage_orders[i])
-                probability = float(stage_probabilities[i])
+                try:
+                    order = int(stage_orders[i])
+                except (ValueError, TypeError):
+                    return self._error_response(
+                        request,
+                        f'Invalid order for stage {i+1} ("{name}"). Use a whole number.',
+                    )
+                try:
+                    probability = float(stage_probabilities[i])
+                except (ValueError, TypeError):
+                    return self._error_response(
+                        request,
+                        f'Invalid probability for stage "{name}". Use a number between 0 and 100.',
+                    )
                 if probability < 0 or probability > 100:
-                    return HttpResponse(
-                        f'<div class="alert alert-danger">Probability must be between 0 and 100 for stage: {name}</div>',
-                        status=400,
+                    return self._error_response(
+                        request,
+                        f"Probability must be between 0 and 100 for stage: {name}",
                     )
                 if OpportunityStage.all_objects.filter(
                     company=company, name=name
                 ).exists():
-                    return HttpResponse(
-                        f'<div class="alert alert-danger">Stage "{name}" already exists for this company.</div>',
-                        status=400,
+                    return self._error_response(
+                        request, f'Stage "{name}" already exists for this company.'
                     )
                 if probability == 100.0:
                     stage_type = "won"
@@ -771,8 +805,14 @@ class SaveCustomOppStagesView(LoginRequiredMixin, View):
                 request,
                 f"Successfully created {company} and associated Opportunity Stages.",
             )
+            stages = list(
+                OpportunityStage.all_objects.filter(company=company).order_by("order")
+            )
             signal_kwargs = self.get_signal_kwargs(
-                company=company, request=request, initialization=initialization
+                company=company,
+                request=request,
+                initialization=initialization,
+                stages=stages,
             )
 
             responses = opp_stage_created.send(sender=self.__class__, **signal_kwargs)
@@ -789,6 +829,9 @@ class SaveCustomOppStagesView(LoginRequiredMixin, View):
                 return response
 
             branches_view_url = reverse_lazy("horilla_core:branches_view")
+            oob_clear_error = (
+                '<div id="custom-stages-error" class="mb-4" hx-swap-oob="true"></div>'
+            )
             response_html = (
                 f"<span "
                 f'hx-trigger="load" '
@@ -798,12 +841,15 @@ class SaveCustomOppStagesView(LoginRequiredMixin, View):
                 f'hx-swap="outerHTML" '
                 f'hx-on::after-request="closeContentModal()"'
                 f'hx-select-oob="#dropdown-companies">'
-                f"</span>"
+                f"</span>{oob_clear_error}"
             )
             return HttpResponse(mark_safe(response_html))
 
-        except ValueError:
-            return HttpResponse()
+        except Exception:
+            return self._error_response(
+                request,
+                "An error occurred while saving stages. Please try again.",
+            )
 
 
 @method_decorator(htmx_required(), name="dispatch")
