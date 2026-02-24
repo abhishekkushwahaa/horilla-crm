@@ -187,6 +187,10 @@
     function initializeDefaultChart(chartIndex, chartData, chartType) {
         const chartDom = document.getElementById('default-chart-' + chartIndex);
         if (chartDom && typeof echarts !== 'undefined' && typeof EChartsConfig !== 'undefined') {
+            var key = 'default-chart-' + chartIndex;
+            if (window.chartInstances && window.chartInstances[key] && window.chartInstances[key].instance) {
+                try { window.chartInstances[key].instance.dispose(); } catch (e) {}
+            }
             const myChart = echarts.init(chartDom);
 
             const config = {
@@ -195,7 +199,9 @@
                 data: chartData.data,
                 labelField: chartData.labelField,
                 colors: EChartsConfig.defaultColors,
-                urls: chartData.urls || []
+                urls: chartData.urls || [],
+                stackedData: chartData.stackedData,
+                hasMultipleGroups: chartData.hasMultipleGroups
             };
 
             const option = EChartsConfig.getChartOption(config);
@@ -204,6 +210,11 @@
             if (chartData.urls && chartData.urls.length > 0) {
                 EChartsConfig.attachClickHandler(myChart, chartData.urls);
             }
+
+            if (typeof window.chartInstances === 'undefined') {
+                window.chartInstances = {};
+            }
+            window.chartInstances[key] = { instance: myChart, config: config };
 
             window.addEventListener('resize', function() {
                 myChart.resize();

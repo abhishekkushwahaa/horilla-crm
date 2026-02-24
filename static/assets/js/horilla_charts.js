@@ -30,6 +30,11 @@ var EChartsConfig = {
         return this.isDarkMode() ? '#374151' : '#e5e7eb';
     },
 
+    // NEW: Get theme-aware border color for chart segments (pie/donut/funnel)
+    getChartBorderColor: function() {
+        return this.isDarkMode() ? '#374151' : '#fff';
+    },
+
     // Common styling configuration
     commonStyles: {
         fontFamily: "'Inter', sans-serif",
@@ -157,7 +162,7 @@ var EChartsConfig = {
                 avoidLabelOverlap: false,
                 itemStyle: {
                     borderRadius: 4,
-                    borderColor: '#fff',
+                    borderColor: this.getChartBorderColor(),
                     borderWidth: 2
                 },
                 label: {
@@ -211,7 +216,7 @@ var EChartsConfig = {
                 avoidLabelOverlap: false,
                 itemStyle: {
                     borderRadius: 6,
-                    borderColor: '#fff',
+                    borderColor: this.getChartBorderColor(),
                     borderWidth: 2
                 },
                 label: {
@@ -453,7 +458,7 @@ var EChartsConfig = {
                     }
                 },
                 itemStyle: {
-                    borderColor: '#fff',
+                    borderColor: this.getChartBorderColor(),
                     borderWidth: 1
                 },
                 emphasis: {
@@ -734,8 +739,12 @@ var EChartsConfig = {
     // UPDATED: Method to refresh chart when theme changes
     refreshChartTheme: function(chartInstance, config) {
         if (!chartInstance) return;
+        try {
+            const dom = chartInstance.getDom && chartInstance.getDom();
+            if (dom && !document.body.contains(dom)) return; // Chart no longer in DOM (e.g. navigated away)
+        } catch (e) { return; }
 
-        // Force re-evaluation of theme-dependent colors
+        // Force re-evaluation of theme-dependent colors (getTextColor, getAxisLineColor, etc.)
         const option = this.getChartOption(config);
 
         // Use notMerge: true to completely replace the option

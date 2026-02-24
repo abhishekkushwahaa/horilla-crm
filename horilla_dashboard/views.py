@@ -19,6 +19,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
 
@@ -1724,6 +1725,9 @@ class ModuleFieldChoicesView(View):
         """
         module = request.GET.get("module")
         row_id = request.GET.get("row_id", "0")
+        # Restrict row_id to safe identifier chars to prevent XSS when used in HTML
+        if not row_id.isdigit():
+            row_id = "0"
 
         field_name = f"field_{row_id}"
         field_id = f"id_field_{row_id}"
@@ -1736,9 +1740,14 @@ class ModuleFieldChoicesView(View):
                 pass
 
         if not module:
-            return HttpResponse(
-                f'<select name="{field_name}" id="{field_id}" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+            return render(
+                request,
+                "partials/field_select_empty.html",
+                {"field_name": field_name, "field_id": field_id},
             )
+            # return HttpResponse(
+            #     f'<select name="{field_name}" id="{field_id}" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+            # )
 
         try:
             model = None
@@ -1751,14 +1760,17 @@ class ModuleFieldChoicesView(View):
                 except LookupError:
                     continue
             if not model:
-                return HttpResponse(
-                    f'<select name="{field_name}" id="{field_id}" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+                return render(
+                    request,
+                    "partials/field_select_empty.html",
+                    {"field_name": field_name, "field_id": field_id},
                 )
         except Exception:
-            return HttpResponse(
-                f'<select name="{field_name}" id="{field_id}" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+            return render(
+                request,
+                "partials/field_select_empty.html",
+                {"field_name": field_name, "field_id": field_id},
             )
-
         model_fields = []
         for field in model._meta.get_fields():
             if field.concrete or field.is_relation:
@@ -1769,25 +1781,17 @@ class ModuleFieldChoicesView(View):
 
         field_choices = [("", "Select Field")] + model_fields
 
-        select_html = f'<select name="{field_name}" id="{field_id}" class="js-example-basic-single headselect"'
-
-        select_html += (
-            f' hx-get="{reverse_lazy("horilla_generics:get_field_value_widget")}"'
+        return render(
+            request,
+            "partials/module_field_select.html",
+            {
+                "field_name": field_name,
+                "field_id": field_id,
+                "row_id": row_id,
+                "model_name": module,
+                "field_choices": field_choices,
+            },
         )
-        select_html += f' hx-target="#id_value_{row_id}_container"'
-        select_html += ' hx-swap="innerHTML"'
-        select_html += f' hx-include="[name=\\"{field_name}\\"],#id_value_{row_id},[name=\\"module\\"]"'
-        select_html += (
-            f' hx-vals=\'{{"model_name": "{module}", "row_id": "{row_id}"}}\''
-        )
-        select_html += ' hx-trigger="change,load"'
-        select_html += ">"
-
-        for value, label in field_choices:
-            select_html += f'<option value="{value}">{label}</option>'
-        select_html += "</select>"
-
-        return HttpResponse(select_html)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -1827,12 +1831,14 @@ class ColumnFieldChoicesView(View):
                     continue
 
             if not model:
-                return HttpResponse(
-                    '<select name="columns" id="id_columns" class="js-example-basic-multiple headselect" multiple><option value="">---------</option></select>'
+                return render(
+                    request,
+                    "partials/column_field_select_empty.html",
                 )
         except Exception:
-            return HttpResponse(
-                '<select name="columns" id="id_columns" class="js-example-basic-multiple headselect" multiple><option value="">---------</option></select>'
+            return render(
+                request,
+                "partials/column_field_select_empty.html",
             )
 
         column_fields = []
@@ -1855,16 +1861,11 @@ class ColumnFieldChoicesView(View):
 
         field_choices = [("", "Add Columns")] + column_fields
 
-        select_html = (
-            ""
-            '<label for="id_columns" class=" pb-2 text-xs text-color-600">Table Columns</label>'
-            '<select name="columns" id="id_columns" class="js-example-basic-multiple headselect" multiple>'
+        return render(
+            request,
+            "partials/column_field_select.html",
+            {"field_choices": field_choices},
         )
-        for value, label in field_choices:
-            select_html += f'<option value="{value}">{label}</option>'
-        select_html += "</select>"
-
-        return HttpResponse(select_html)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -1888,8 +1889,9 @@ class GroupingFieldChoicesView(View):
                 pass
 
         if not module:
-            return HttpResponse(
-                '<select name="grouping_field" id="id_grouping_field" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+            return render(
+                request,
+                "partials/grouping_field_select_empty.html",
             )
 
         try:
@@ -1904,12 +1906,14 @@ class GroupingFieldChoicesView(View):
                     continue
 
             if not model:
-                return HttpResponse(
-                    '<select name="grouping_field" id="id_grouping_field" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+                return render(
+                    request,
+                    "partials/grouping_field_select_empty.html",
                 )
         except Exception:
-            return HttpResponse(
-                '<select name="grouping_field" id="id_grouping_field" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+            return render(
+                request,
+                "partials/grouping_field_select_empty.html",
             )
 
         # Get fields suitable for grouping
@@ -1934,16 +1938,11 @@ class GroupingFieldChoicesView(View):
 
         field_choices = [("", "Select Grouping Field")] + grouping_fields
 
-        select_html = (
-            ""
-            '<label for="id_grouping_field" class="text-xs text-color-600">Grouping Field</label>\
-        <select name="grouping_field" id="id_grouping_field" class="js-example-basic-single headselect">'
+        return render(
+            request,
+            "partials/grouping_field_select.html",
+            {"field_choices": field_choices},
         )
-        for value, label in field_choices:
-            select_html += f'<option value="{value}">{label}</option>'
-        select_html += "</select>"
-
-        return HttpResponse(select_html)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -1967,8 +1966,9 @@ class SecondaryGroupingFieldChoicesView(View):
                 pass
 
         if not module:
-            return HttpResponse(
-                '<select name="secondary_grouping" id="id_secondary_grouping" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+            return render(
+                request,
+                "partials/secondary_grouping_field_select_empty.html",
             )
 
         try:
@@ -1983,12 +1983,14 @@ class SecondaryGroupingFieldChoicesView(View):
                     continue
 
             if not model:
-                return HttpResponse(
-                    '<select name="secondary_grouping" id="id_secondary_grouping" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+                return render(
+                    request,
+                    "partials/secondary_grouping_field_select_empty.html",
                 )
         except Exception:
-            return HttpResponse(
-                '<select name="secondary_grouping" id="id_secondary_grouping" class="js-example-basic-single headselect"><option value="">---------</option></select>'
+            return render(
+                request,
+                "partials/secondary_grouping_field_select_empty.html",
             )
 
         grouping_fields = []
@@ -2011,16 +2013,11 @@ class SecondaryGroupingFieldChoicesView(View):
 
         field_choices = [("", "Select Secondary Grouping Field")] + grouping_fields
 
-        select_html = (
-            ""
-            '<label for="secondary_grouping" class="text-xs text-color-600">Secondary Grouping Field</label>\
-        <select name="secondary_grouping" id="id_secondary_grouping" class="js-example-basic-single headselect">'
+        return render(
+            request,
+            "partials/secondary_grouping_field_select.html",
+            {"field_choices": field_choices},
         )
-        for value, label in field_choices:
-            select_html += f'<option value="{value}">{label}</option>'
-        select_html += "</select>"
-
-        return HttpResponse(select_html)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -2168,10 +2165,16 @@ class ChartPreviewView(View):
                 (function() {{
                     const chartDom = document.getElementById('preview-chart-{chart_type}');
                     if (chartDom && typeof EChartsConfig !== 'undefined' && typeof echarts !== 'undefined') {{
+                        const previewKey = 'preview-chart-{chart_type}';
+                        if (window.chartInstances && window.chartInstances[previewKey]) {{
+                            try {{ window.chartInstances[previewKey].instance.dispose(); }} catch (e) {{}}
+                        }}
                         const myChart = echarts.init(chartDom);
                         const config = {chart_config_json};
                         const option = EChartsConfig.getChartOption(config);
                         myChart.setOption(option);
+                        if (typeof window.chartInstances === 'undefined') window.chartInstances = {{}};
+                        window.chartInstances[previewKey] = {{ instance: myChart, config: config }};
                     }}
                 }})();
                 </script>
@@ -2192,7 +2195,10 @@ class ChartPreviewView(View):
             )
         )
         return HttpResponse(
-            f'<div class="text-gray-500 text-sm flex items-center justify-center h-full">{message}</div>'
+            format_html(
+                '<div class="text-gray-500 text-sm flex items-center justify-center h-full">{}</div>',
+                message,
+            )
         )
 
 
@@ -2959,11 +2965,17 @@ class DashboardComponentChartView(View):
                 (function() {{
                     const chartDom = document.getElementById('component-chart-{component.id}');
                     if (chartDom && typeof EChartsConfig !== 'undefined' && typeof echarts !== 'undefined') {{
+                        const compKey = 'dashboard-component-{component.id}';
+                        if (window.chartInstances && window.chartInstances[compKey]) {{
+                            try {{ window.chartInstances[compKey].instance.dispose(); }} catch (e) {{}}
+                        }}
                         const myChart = echarts.init(chartDom);
                         const config = {chart_config_json};
                         const option = EChartsConfig.getChartOption(config);
                         myChart.setOption(option);
                         EChartsConfig.attachClickHandler(myChart, config.urls);
+                        if (typeof window.chartInstances === 'undefined') window.chartInstances = {{}};
+                        window.chartInstances[compKey] = {{ instance: myChart, config: config }};
                     }}
                 }})();
                 </script>
