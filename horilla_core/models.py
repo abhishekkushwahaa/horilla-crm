@@ -1056,6 +1056,8 @@ class HorillaUser(AbstractUser):
     AbstractUser._meta.get_field("is_superuser").verbose_name = _("Administrator")
     AbstractUser._meta.get_field("is_active").verbose_name = _("Active")
 
+    PROPERTY_LABELS = {"get_avatar_with_name": "Name"}
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
@@ -1089,9 +1091,19 @@ class HorillaUser(AbstractUser):
     def get_avatar_with_name(self):
         """
         Returns HTML to render profile image and full name (first + last name).
+        Safe for export: no file on profile ImageField will not raise.
         """
-        image_url = self.profile.url if self.profile else self.get_avatar()
-        full_name = f"{self.first_name} {self.last_name}"
+        try:
+            image_url = (
+                self.profile.url
+                if self.profile and getattr(self.profile, "name", None)
+                else self.get_avatar()
+            )
+        except (ValueError, OSError):
+            image_url = self.get_avatar()
+        full_name = (f"{self.first_name} {self.last_name}").strip() or getattr(
+            self, "username", ""
+        )
 
         return format_html(
             """
@@ -2432,7 +2444,10 @@ class Holiday(HorillaCoreModel):
 
         # WEEKLY
         if self.frequency == "weekly" and self.weekly_days:
-            return f"Recur every {self.recurs_every_weeks or 1} week on {self.weekly_days.capitalize()}"
+            day_map = dict(DAY_CHOICES)
+            days = ", ".join(day_map[day] for day in self.weekly_days)
+
+            return f"Recur every {self.recurs_every_weeks or 1} week on {days}"
 
         # MONTHLY
         if self.frequency == "monthly" and self.monthly_repeat_type:
@@ -2843,36 +2858,52 @@ class BusinessHour(BusinessHourDayMixin, HorillaCoreModel):
         def format_time(value):
             if not value:
                 return "--:--"
-            return time_format(value, "P")  # e.g., 08:30 AM
+            return time_format(value, "P")
 
-        selected = self.week_days or []
+        raw_week_days = self.week_days
+        if isinstance(raw_week_days, (list, tuple)):
+            selected = list(raw_week_days)
+        elif isinstance(raw_week_days, str) and raw_week_days.strip():
+            selected = [
+                p.strip() for p in raw_week_days.replace(",", " ").split() if p.strip()
+            ]
+        else:
+            selected = []
 
         # 24/7
         if self.business_hour_type == "24_7":
-            return format_html("Monday - Sunday<br><strong>(24 Hours)</strong>")
+            return mark_safe("Monday - Sunday<br><strong>(24 Hours)</strong>")
 
         # 24/5
         if self.business_hour_type == "24_5":
-            selected_labels = [
-                self.DAY_LABELS[d] for d in self.WEEK_ORDER if d in selected
-            ]
-            closed_labels = [
-                self.DAY_LABELS[d] for d in self.WEEK_ORDER if d not in selected
-            ]
+            selected_set = set(selected) if selected else set(self.WEEK_ORDER[:5])
 
-            if set(selected) == set(self.WEEK_ORDER[:5]):
-                base_line = "<span style='white-space: nowrap;'>Monday – Friday<span style='font-weight:bold;'>  (24Hours)</span></span>"
-            elif set(selected) == set(self.WEEK_ORDER):
-                base_line = "<span style='white-space: nowrap;'>Monday – Sunday<span style='font-weight:bold;'>  (24Hours)</span></span>"
-            else:
-                base_line = "<span style='white-space: nowrap;'>{},<span style='font-weight:bold;'>  (24Hours)</span></span>".format(
-                    ", ".join(selected_labels)
+            if selected_set == set(self.WEEK_ORDER[:5]):
+                return mark_safe(
+                    "<span style='white-space: nowrap;'>"
+                    "Monday – Friday"
+                    "<span style='font-weight:bold;'> (24 Hours)</span>"
+                    "</span>"
                 )
 
-            if closed_labels:
-                closed_lines = "Closed: {}".format(", ".join(closed_labels))
-                return format_html(f"{base_line}<br>{closed_lines}")
-            return format_html(base_line)
+            if selected_set == set(self.WEEK_ORDER):
+                return mark_safe(
+                    "<span style='white-space: nowrap;'>"
+                    "Monday – Sunday"
+                    "<span style='font-weight:bold;'> (24 Hours)</span>"
+                    "</span>"
+                )
+
+            selected_labels = [
+                self.DAY_LABELS[d] for d in self.WEEK_ORDER if d in selected_set
+            ]
+
+            return mark_safe(
+                "<span style='white-space: nowrap;'>"
+                f"{', '.join(selected_labels)}"
+                "<span style='font-weight:bold;'> (24 Hours)</span>"
+                "</span>"
+            )
 
         # CUSTOM
         if self.business_hour_type == "custom":
@@ -2883,22 +2914,17 @@ class BusinessHour(BusinessHourDayMixin, HorillaCoreModel):
 
                 if labels:
                     if labels == [self.DAY_LABELS[d] for d in self.WEEK_ORDER[:5]]:
-                        return format_html(
-                            "Monday - Friday<br><strong>({} – {})</strong>", start, end
+                        return mark_safe(
+                            f"Monday - Friday<br><strong>({start} – {end})</strong>"
                         )
                     if labels == [self.DAY_LABELS[d] for d in self.WEEK_ORDER]:
-                        return format_html(
-                            "Monday - Sunday<br><strong>({} – {})</strong>", start, end
+                        return mark_safe(
+                            f"Monday - Sunday<br><strong>({start} – {end})</strong>"
                         )
+                    days = ", ".join(labels)
+                    return mark_safe(f"{days}<br><strong>({start} – {end})</strong>")
 
-                    return format_html(
-                        "{days}<br><strong>({start} – {end})</strong>",
-                        days=", ".join(labels),
-                        start=start,
-                        end=end,
-                    )
-
-                return f"{start} – {end}"
+                return mark_safe(f"{start} – {end}")
 
             if self.timing_type == "different":
                 rows = []
@@ -2908,26 +2934,35 @@ class BusinessHour(BusinessHourDayMixin, HorillaCoreModel):
                     prefix = day_label.lower()
 
                     if is_open:
-                        start = format_time(getattr(self, f"{prefix}_start", None))
-                        end = format_time(getattr(self, f"{prefix}_end", None))
-                        time_range = f"{start} – {end}"
+                        start_val = getattr(self, f"{prefix}_start", None)
+                        end_val = getattr(self, f"{prefix}_end", None)
+
+                        from datetime import time
+
+                        is_midnight = lambda t: t is None or t == time(0, 0)
+
+                        if is_midnight(start_val) and is_midnight(end_val):
+                            time_range = "Closed"
+                        else:
+                            time_range = (
+                                f"{format_time(start_val)} – {format_time(end_val)}"
+                            )
                     else:
                         time_range = "Closed"
 
-                    row = f"""
-                        <tr class="text-sm">
-                            <td class="pr-4 text-gray-600 whitespace-nowrap w-24 mb-5">{day_label}</td>
-                            <td class="font-semibold text-black whitespace-nowrap">{time_range}</td>
-                        </tr>
-                    """
+                    row = (
+                        f'<tr class="text-sm">'
+                        f'<td class="pr-4 text-gray-600 whitespace-nowrap w-24 mb-5">{day_label}</td>'
+                        f'<td class="font-semibold text-black whitespace-nowrap">{time_range}</td>'
+                        f"</tr>"
+                    )
                     rows.append(row)
 
-                return format_html(
-                    '<table class="text-left align-top space-y-1">{}</table>',
-                    format_html("".join(rows)),
+                return mark_safe(
+                    f'<table class="text-left align-top space-y-1">{"".join(rows)}</table>'
                 )
 
-        return "—"
+        return mark_safe("—")
 
 
 class RecycleBin(models.Model):
@@ -3483,6 +3518,12 @@ class ExportSchedule(HorillaCoreModel):
 
         verbose_name = _("Export Schedule")
         verbose_name_plural = _("Export Schedules")
+
+    PROPERTY_LABELS = {
+        "module_names_display": "Modules",
+        "last_executed": "Last Executed On",
+        "frequency_display": "Schedule Details",
+    }
 
     def __str__(self):
         return f"{self.user} – {self.frequency} – {self.export_format}"
