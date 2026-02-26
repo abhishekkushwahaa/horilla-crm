@@ -10,7 +10,6 @@ from functools import cached_property
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -369,11 +368,7 @@ class ForecastTargetFormView(LoginRequiredMixin, HorillaSingleFormView):
                     (f.id, f.name) for f in ForecastType.objects.all()
                 ],
             }
-            return HttpResponse(
-                render_to_string(
-                    "forecast_target/condition_row.html", context, request=request
-                )
-            )
+            return render(request, "forecast_target/condition_row.html", context)
         finally:
             self.condition_fields = original_fields
 
@@ -514,8 +509,7 @@ class ToggleRoleBasedView(View):
         if not is_target_same:
             condition_fields.append("target_amount")
 
-        # Condition fields container (main response)
-        condition_context = {
+        context = {
             "form": form,
             "condition_fields": condition_fields,
             "users": users,
@@ -526,24 +520,13 @@ class ToggleRoleBasedView(View):
             ],
             "submitted_condition_data": self.get_condition_data(request),
             "condition_row_count": request.session.get("condition_row_count", 0),
-        }
-        html_condition = render_to_string(
-            "forecast_target/condition_fields.html", condition_context, request=request
-        )
-
-        # Role container oob
-        role_context = {
-            "form": form,
             "is_role_based": is_role_based,
         }
-        html_role = render_to_string(
-            "forecast_target/role_field.html", role_context, request=request
+        return render(
+            request,
+            "forecast_target/toggle_role_based_response.html",
+            context,
         )
-        html_role_oob = (
-            f'<div id="role_container" hx-swap-oob="innerHTML">{html_role}</div>'
-        )
-
-        return HttpResponse(html_condition + html_role_oob)
 
     def get_condition_data(self, request):
         """Extract and return condition row data from POST request."""
@@ -619,7 +602,6 @@ class ToggleConditionFieldsView(View):
                     except Exception:
                         continue
 
-        # Condition fields (main)
         context = {
             "form": form,
             "condition_fields": condition_fields,
@@ -630,43 +612,14 @@ class ToggleConditionFieldsView(View):
             ],
             "submitted_condition_data": condition_data,
             "condition_row_count": request.session.get("condition_row_count", 0),
-        }
-        html_condition = render_to_string(
-            "forecast_target/condition_fields.html", context, request=request
-        )
-
-        # Period oob
-        period_context = {"form": form, "is_period_same": is_period_same}
-        html_period = render_to_string(
-            "forecast_target/period_field.html", period_context, request=request
-        )
-        html_period_oob = (
-            f'<div id="period_container" hx-swap-oob="innerHTML">{html_period}</div>'
-        )
-
-        # Target oob
-        target_context = {"form": form, "is_target_same": is_target_same}
-        html_target = render_to_string(
-            "forecast_target/target_field.html", target_context, request=request
-        )
-        html_target_oob = (
-            f'<div id="target_container" hx-swap-oob="innerHTML">{html_target}</div>'
-        )
-
-        # Forecast type oob
-        forecast_context = {
-            "form": form,
+            "is_period_same": is_period_same,
+            "is_target_same": is_target_same,
             "is_forecast_type_same": is_forecast_type_same,
         }
-        html_forecast = render_to_string(
-            "forecast_target/forecast_type_field.html",
-            forecast_context,
-            request=request,
-        )
-        html_forecast_oob = f'<div id="forecast_type_container" hx-swap-oob="innerHTML">{html_forecast}</div>'
-
-        return HttpResponse(
-            html_condition + html_period_oob + html_target_oob + html_forecast_oob
+        return render(
+            request,
+            "forecast_target/toggle_condition_fields_response.html",
+            context,
         )
 
 

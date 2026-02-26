@@ -288,7 +288,12 @@
                         }
                     };
 
+                    const REPORT_CHART_KEY = 'report-chart-' + REPORT_ID;
+
                     function cleanupChart() {
+                        if (window.chartInstances && window.chartInstances[REPORT_CHART_KEY]) {
+                            delete window.chartInstances[REPORT_CHART_KEY];
+                        }
                         // Clean up existing chart instance
                         if (window[CHART_INSTANCE_KEY]) {
                             try {
@@ -349,6 +354,11 @@
 
                                 const option = EChartsConfig.getChartOption(chartConfig);
                                 chartInstance.setOption(option, true);
+
+                                if (typeof window.chartInstances === 'undefined') {
+                                    window.chartInstances = {};
+                                }
+                                window.chartInstances[REPORT_CHART_KEY] = { instance: chartInstance, config: chartConfig };
 
                                 const chartUrls = {{ chart_data.urls|safe|default:"[]" }};
                                 if (chartUrls && chartUrls.length > 0) {
