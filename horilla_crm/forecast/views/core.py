@@ -23,11 +23,11 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from horilla.auth.models import User
+from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.exceptions import HorillaHttp404
 
 # First-party / Horilla imports
 from horilla.utils.shortcuts import get_object_or_404
-from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.models import Company, FiscalYearInstance, Period
 from horilla_core.services.fiscal_year_service import FiscalYearService
 from horilla_crm.forecast.models import Forecast, ForecastTarget, ForecastType
@@ -215,7 +215,7 @@ class ForecastTabView(LoginRequiredMixin, HorillaTabView):
         query_params = self.request.GET.copy()
         for index, forecast_type in enumerate(forecast_types, 1):
             url = reverse_lazy(
-                "forecast:forecast_type_view", kwargs={"pk": forecast_type.id}
+                "forecast:forecast_type_tab_view", kwargs={"pk": forecast_type.id}
             )
             if query_params:
                 url = f"{url}?{query_params.urlencode()}"
@@ -236,7 +236,7 @@ class ForecastTabView(LoginRequiredMixin, HorillaTabView):
     ),
     name="dispatch",
 )
-class ForecastTypeView(TemplateView):
+class ForecastTypeTabView(TemplateView):
     """
     Detailed forecast view displaying period-by-period data with trends, targets,
     and performance metrics for a specific forecast type.
@@ -1658,7 +1658,6 @@ class ForecastOpportunitiesView(LoginRequiredMixin, View):
                     table_height=False,
                     table_height_as_class="h-[400px]",
                     bulk_select_option=False,
-                    clear_session_button_enabled=False,
                     list_column_visibility=False,
                     bulk_delete_enabled=False,
                     bulk_update_option=False,

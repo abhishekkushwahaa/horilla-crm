@@ -16,9 +16,10 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 
-# First-party / Horilla imports
 from horilla.auth.models import User
-from horilla_core.decorators import (
+
+# First-party / Horilla imports
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
@@ -192,7 +193,6 @@ class ForecastTargetListView(LoginRequiredMixin, HorillaListView):
     main_url = reverse_lazy("forecast:forecast_target_view")
     save_to_list_option = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     table_width = False
     enable_sorting = False
     table_height = False

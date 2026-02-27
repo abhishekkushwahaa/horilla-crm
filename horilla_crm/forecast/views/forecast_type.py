@@ -15,13 +15,12 @@ from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 
-from horilla_core.decorators import (
+# First-party / Horilla imports
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
-
-# First-party / Horilla imports
 from horilla_crm.forecast.filters import ForecastTypeFilter
 from horilla_crm.forecast.forms import ForecastTypeForm
 from horilla_crm.forecast.models import ForecastCondition, ForecastType
@@ -87,7 +86,6 @@ class ForecastTypeListView(LoginRequiredMixin, HorillaListView):
     main_url = reverse_lazy("forecast:forecast_type_view")
     save_to_list_option = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     table_width = False
     enable_sorting = False
     table_height = False
