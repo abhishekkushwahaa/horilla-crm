@@ -19,9 +19,11 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.views import View
+
+from horilla.http import safe_url
 
 # First-party (Horilla)
 from horilla.registry.feature import FEATURE_REGISTRY
@@ -277,11 +279,13 @@ class GlobalSearchView(LoginRequiredMixin, View):
         def highlight_text(text):
             if not text:
                 return text
+            escaped_text = escape(str(text))
+            escaped_query = escape(query)
             return mark_safe(
                 re.sub(
-                    f"({re.escape(query)})",
+                    f"({re.escape(escaped_query)})",
                     r'<span class="bg-yellow-200">\1</span>',
-                    str(text),
+                    str(escaped_text),
                     flags=re.IGNORECASE,
                 )
             )
@@ -318,7 +322,6 @@ class GlobalSearchView(LoginRequiredMixin, View):
         list_view.table_height = False
         list_view.table_height_as_class = "h-[calc(_100vh_-_160px_)]"
         list_view.bulk_select_option = False
-        list_view.clear_session_button_enabled = False
         list_view.table_width = False
         list_view.search_url = reverse_lazy("horilla_generics:global_search")
         list_view.list_column_visibility = False
@@ -369,11 +372,7 @@ class GlobalSearchView(LoginRequiredMixin, View):
         if previous_url:
             try:
                 previous_url = unquote(unquote(previous_url))
-                if not url_has_allowed_host_and_scheme(
-                    url=previous_url,
-                    allowed_hosts={request.get_host()},
-                ):
-                    previous_url = "/"
+                previous_url = safe_url(request, previous_url, "/")
 
                 if "?" in previous_url:
 
