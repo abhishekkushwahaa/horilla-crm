@@ -19,13 +19,14 @@ from django.views import View
 
 # First-party / Horilla imports
 from horilla.auth.models import User
+from horilla.http import safe_url
 
 
 def set_sqlite_foreign_keys(enabled: bool):
     """Enable or disable SQLite foreign key checks."""
     if connection.vendor == "sqlite":
         with connection.cursor() as cursor:
-            cursor.execute(f"PRAGMA foreign_keys = {'ON' if enabled else 'OFF'};")
+            cursor.execute(f"PRAGMA foreign_keys = {1 if enabled else 0};")
 
 
 def inject_timestamps_into_fixture_data(data):
@@ -68,6 +69,8 @@ class LoadDatabase(View):
         next_url = request.GET.get("next", "/")
         if load_data:
             return render(request, "load_data/init_password.html", {"next": next_url})
+
+        next_url = safe_url(request, next_url)
         return redirect(next_url)
 
 
@@ -299,6 +302,7 @@ class LoadDemoDatabase(View):
 
             return render(request, "load_data/init_password.html")
 
+        next_url = safe_url(request, next_url)
         return redirect(next_url)
 
     def load_file_ajax(self, request):

@@ -16,7 +16,6 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -24,12 +23,11 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from horilla.auth.models import User
+from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.registry.permission_registry import PERMISSION_EXEMPT_MODELS
 
 # First-party / Horilla imports
 from horilla.utils.shortcuts import get_object_or_404
-from horilla_core.decorators import htmx_required, permission_required_or_denied
-from horilla_core.filters import UserFilter
 from horilla_core.forms import AddSuperUsersForm
 from horilla_core.models import FieldPermission, Role
 from horilla_generics.views import (
@@ -186,7 +184,7 @@ class ModelFieldsModalView(LoginRequiredMixin, TemplateView):
     template_name = "permissions/field_permissions_modal.html"
 
     def get(self, request, app_label, model_name, *args, **kwargs):
-
+        """Load field permissions modal for role or user context; support bulk selected users."""
         role_id = kwargs.get("role_id")
         user_id = kwargs.get("user_id")
         context_type = request.GET.get("context", "role")
@@ -267,7 +265,7 @@ class ModelFieldsModalView(LoginRequiredMixin, TemplateView):
 
         excluded_fields = getattr(model, "field_permissions_exclude", None)
         if not isinstance(excluded_fields, (list, tuple, set)):
-            excluded_fields = []
+            excluded_fields = set()
         else:
             excluded_fields = set(excluded_fields)
 
@@ -335,7 +333,7 @@ class ModelFieldsModalView(LoginRequiredMixin, TemplateView):
             "selected_users_count": selected_users_count,
         }
 
-        return HttpResponse(render_to_string(self.template_name, context, request))
+        return render(request, self.template_name, context)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -694,6 +692,7 @@ class GroupTab(LoginRequiredMixin, TemplateView):
     template_name = "permissions/group.html"
 
     def get_context_data(self, **kwargs):
+        """Add roles and all_models (permission data) to context."""
         context = super().get_context_data(**kwargs)
         context["roles"] = Role.objects.all().order_by("role_name")
         context["all_models"] = PermissionUtils.get_all_models_data()
@@ -720,6 +719,7 @@ class RolePermissionsView(LoginRequiredMixin, TemplateView):
     template_name = "permissions/group_role_detail.html"
 
     def get(self, request, *args, **kwargs):
+        """Validate role_id and return reload script on error; otherwise delegate to parent."""
         role_id = kwargs.get("role_id")
         try:
             _role = get_object_or_404(Role, id=role_id)
@@ -732,6 +732,7 @@ class RolePermissionsView(LoginRequiredMixin, TemplateView):
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """Add role and all_models (permission data for role) to context."""
         context = super().get_context_data(**kwargs)
         role_id = self.kwargs.get("role_id")
 
@@ -767,6 +768,7 @@ class SearchRoleModelsView(LoginRequiredMixin, TemplateView):
     template_name = "permissions/search_permission/role_models_list.html"
 
     def get(self, request, role_id, *args, **kwargs):
+        """Return filtered role models list HTML for search; reload script on invalid role."""
         try:
             role = get_object_or_404(Role, id=role_id)
         except Exception:
@@ -781,7 +783,7 @@ class SearchRoleModelsView(LoginRequiredMixin, TemplateView):
                 role=role, search_query=search_query
             ),
         }
-        return HttpResponse(render_to_string(self.template_name, context, request))
+        return render(request, self.template_name, context)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -804,6 +806,7 @@ class SearchUserModelsView(LoginRequiredMixin, TemplateView):
     template_name = "permissions/search_permission/user_models_list.html"
 
     def get(self, request, user_id, *args, **kwargs):
+        """Return filtered user models list HTML for search; reload script on invalid user."""
         try:
             user = get_object_or_404(User, id=user_id)
         except Exception:
@@ -818,7 +821,7 @@ class SearchUserModelsView(LoginRequiredMixin, TemplateView):
                 user=user, search_query=search_query
             ),
         }
-        return HttpResponse(render_to_string(self.template_name, context, request))
+        return render(request, self.template_name, context)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -841,6 +844,7 @@ class SearchAssignModelsView(LoginRequiredMixin, TemplateView):
     template_name = "permissions/search_permission/assign_models_list.html"
 
     def get(self, request, *args, **kwargs):
+        """Return assign models list HTML filtered by search query."""
         search_query = request.GET.get("search", "").strip()
 
         context = {
@@ -848,7 +852,7 @@ class SearchAssignModelsView(LoginRequiredMixin, TemplateView):
                 search_query=search_query
             ),
         }
-        return HttpResponse(render_to_string(self.template_name, context, request))
+        return render(request, self.template_name, context)
 
 
 # end search
@@ -872,6 +876,7 @@ class RoleMembersView(LoginRequiredMixin, TemplateView):
     template_name = "permissions/role_members.html"
 
     def get(self, request, *args, **kwargs):
+        """Validate role_id and return reload script on error; otherwise delegate to parent."""
         role_id = kwargs.get("role_id")
         try:
             _role = get_object_or_404(Role, id=role_id)
@@ -882,6 +887,7 @@ class RoleMembersView(LoginRequiredMixin, TemplateView):
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """Add role, members list view context, and column/action config to context."""
         context = super().get_context_data(**kwargs)
         role_id = self.kwargs.get("role_id")
         role = get_object_or_404(Role, id=role_id)
@@ -924,7 +930,6 @@ class RoleMembersView(LoginRequiredMixin, TemplateView):
             bulk_export_option=False,
             bulk_update_option=False,
             bulk_delete_enabled=False,
-            clear_session_button_enabled=False,
             list_column_visibility=False,
             enable_sorting=True,
             save_to_list_option=False,
@@ -964,6 +969,7 @@ class PermissionTab(LoginRequiredMixin, TemplateView):
     template_name = "permissions/permission.html"
 
     def get_context_data(self, **kwargs):
+        """Add paginated non-superuser users for current company to context."""
         context = super().get_context_data(**kwargs)
         company = (
             getattr(self.request, "active_company", None) or self.request.user.company
@@ -1059,7 +1065,7 @@ class LoadUserPermissionsView(LoginRequiredMixin, TemplateView):
             "user": user,
             "all_models": PermissionUtils.get_all_models_data(user=user),
         }
-        return HttpResponse(render_to_string(self.template_name, context, request))
+        return render(request, self.template_name, context)
 
 
 # user search end
@@ -1085,6 +1091,7 @@ class LoadMoreUsersView(LoginRequiredMixin, TemplateView):
     template_name = "permissions/user_list.html"
 
     def get(self, request, *args, **kwargs):
+        """Return paginated user list HTML, optionally filtered by search."""
         search_query = request.GET.get("search", "").strip()
 
         users = User.objects.filter(is_superuser=False)
@@ -1112,7 +1119,7 @@ class LoadMoreUsersView(LoginRequiredMixin, TemplateView):
             "search_query": search_query,
         }
 
-        return HttpResponse(render_to_string(self.template_name, context, request))
+        return render(request, self.template_name, context)
 
 
 @method_decorator(
@@ -1180,11 +1187,11 @@ class AssignUsersView(LoginRequiredMixin, View):
         """Render the assign permissions form."""
         context = {
             "all_models": PermissionUtils.get_all_models_data(
-                user=None,  # Optionally pass user if you want pre-check
+                user=None,
             )
         }
         if request.headers.get("HX-Request"):
-            return HttpResponse(render_to_string(self.template_name, context, request))
+            return render(request, self.template_name, context)
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -1202,7 +1209,7 @@ class AssignUsersView(LoginRequiredMixin, View):
                 "all_models": PermissionUtils.get_all_models_data(),
                 "form": {"errors": errors},
             }
-            return HttpResponse(render_to_string(self.template_name, context, request))
+            return render(request, self.template_name, context)
 
         users = User.objects.filter(id__in=user_ids, is_superuser=False)
         permissions = Permission.objects.filter(id__in=permission_ids)

@@ -26,7 +26,7 @@ from django.contrib import messages
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.template.loader import render_to_string
+from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -34,10 +34,11 @@ from django.views import View
 from django.views.generic import DetailView
 from django.views.generic.edit import FormView
 
+from horilla.decorator import htmx_required
+
 # First-party / Horilla imports
 from horilla.exceptions import HorillaHttp404
 from horilla.utils.shortcuts import get_object_or_404
-from horilla_core.decorators import htmx_required
 from horilla_core.forms import FiscalYearForm
 from horilla_core.mixins import FiscalYearCalendarMixin
 from horilla_core.models import FiscalYear, FiscalYearInstance
@@ -304,8 +305,7 @@ class FiscalYearFieldsView(LoginRequiredMixin, FormView):
             ],
         }
 
-        rendered = render_to_string(self.template_name, context, request=request)
-        return HttpResponse(rendered)
+        return render(request, self.template_name, context)
 
     def calculate_preview_data(
         self,
@@ -437,10 +437,7 @@ class CalculateWeekStartDayView(LoginRequiredMixin, View):
                 pass
 
         context = {"form": form, "week_start_day_value": selected_day}
-        rendered = render_to_string(
-            "settings/week_start_day_select.html", context, request=request
-        )
-        return HttpResponse(rendered)
+        return render(request, "settings/week_start_day_select.html", context)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -481,8 +478,7 @@ class FiscalYearCalendarPreviewView(
             }
         )
 
-        rendered = render_to_string(self.template_name, context, request=request)
-        return HttpResponse(rendered)
+        return render(request, self.template_name, context)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -496,6 +492,7 @@ class FiscalYearCalendarView(LoginRequiredMixin, DetailView, FiscalYearCalendarM
     context_object_name = "fiscal_year"
 
     def get(self, request, *args, **kwargs):
+        """Return 404 script or delegate to parent get for fiscal year detail."""
         pk = self.kwargs.get("pk")
         try:
             get_object_or_404(FiscalYear, pk=pk)
@@ -507,6 +504,7 @@ class FiscalYearCalendarView(LoginRequiredMixin, DetailView, FiscalYearCalendarM
         return super().get(request, *args, **kwargs)
 
     def get_object(self, queryset=None):
+        """Return FiscalYear by pk or raise HorillaHttp404."""
         pk = self.kwargs.get(self.pk_url_kwarg)
         try:
             return FiscalYear.objects.get(pk=pk)
@@ -514,6 +512,7 @@ class FiscalYearCalendarView(LoginRequiredMixin, DetailView, FiscalYearCalendarM
             raise HorillaHttp404(e)
 
     def get_context_data(self, **kwargs):
+        """Add fiscal year instances, calendar data, and navigation context."""
         context = super().get_context_data(**kwargs)
         fiscal_year = self.get_object()
 
@@ -596,11 +595,6 @@ class FiscalYearCalendarView(LoginRequiredMixin, DetailView, FiscalYearCalendarM
         return context
 
     def render_to_response(self, context, **response_kwargs):
-        if self.request.headers.get("HX-Request"):
-            rendered = render_to_string(
-                self.template_name, context, request=self.request
-            )
-            return HttpResponse(rendered)
+        """Render template; return HTML string in HttpResponse for HTMX or full page."""
 
-        rendered = render_to_string(self.template_name, context, request=self.request)
-        return HttpResponse(rendered)
+        return render(self.request, self.template_name, context)

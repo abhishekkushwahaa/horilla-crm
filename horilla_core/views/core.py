@@ -7,7 +7,6 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta
-from urllib.parse import urlencode, urlparse
 
 # Third-party imports (other)
 import pycountry
@@ -23,8 +22,7 @@ from django.urls import reverse_lazy
 from django.utils._os import safe_join
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property  # type: ignore
-from django.utils.html import escape
-from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views import View
@@ -37,17 +35,18 @@ from rest_framework_simplejwt.tokens import UntypedToken
 # First-party / Horilla imports
 from horilla import settings
 from horilla.auth.models import User
+from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.exceptions import HorillaHttp404
+from horilla.http import safe_url
+from horilla.http.response import HorillaRedirectResponse
 from horilla.utils.branding import load_branding
 from horilla.utils.choices import BLOCKED_EXTENSIONS
-from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.forms import (
     BusinessHourForm,
     CompanyFormClassSingle,
     CompanyMultistepFormClass,
     HolidayForm,
 )
-from horilla_core.initialiaze_database import InitializeDatabaseConditionView
 from horilla_core.models import (
     ActiveTab,
     BusinessHour,
@@ -55,8 +54,13 @@ from horilla_core.models import (
     DatedConversionRate,
     Holiday,
     MultipleCurrency,
-    Role,
 )
+from horilla_core.signals import (
+    company_created,
+    pre_login_render_signal,
+    pre_logout_signal,
+)
+from horilla_core.views.initialiaze_database import InitializeDatabaseConditionView
 from horilla_generics.views import (
     HorillaListView,
     HorillaModalDetailView,
@@ -67,8 +71,6 @@ from horilla_generics.views import (
     HorillaView,
 )
 from horilla_mail.models import HorillaMailConfiguration
-
-from .signals import company_created, pre_login_render_signal, pre_logout_signal
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +192,7 @@ class LoginUserView(View):
         """
         Render login page with an optional 'next' param preserved.
         """
-        next_url = request.GET.get("next", "/")
+        next_url = safe_url(request, request.GET.get("next", "/"))
         condition_view = InitializeDatabaseConditionView()
         initialize_database = condition_view.get_initialize_condition()
         show_forgot_password = False
@@ -221,7 +223,7 @@ class LoginUserView(View):
         """
         identifier = request.POST.get("username")
         secret = request.POST.get("password")
-        next_url = request.POST.get("next", "/")
+        next_url = safe_url(request, request.POST.get("next", "/"))
 
         user = None
 
@@ -250,12 +252,7 @@ class LoginUserView(View):
 
         login(request, user)
         messages.success(request, _("Login successful."))
-
-        if not url_has_allowed_host_and_scheme(
-            next_url, allowed_hosts={request.get_host()}
-        ):
-            next_url = "/"
-
+        next_url = safe_url(request, next_url)
         return redirect(next_url)
 
 
@@ -485,7 +482,11 @@ class CompanyMultiFormView(LoginRequiredMixin, HorillaMultiStepFormView):
         for _receiver, response in responses:
             if isinstance(response, HttpResponse):
                 wrapped_response = HttpResponse(
-                    f'<div id="{self.view_id}-container">{response.content.decode()}</div>'
+                    format_html(
+                        '<div id="{}-container">{}</div>',
+                        self.view_id,
+                        mark_safe(response.content.decode()),
+                    )
                 )
                 return wrapped_response
 
@@ -495,18 +496,20 @@ class CompanyMultiFormView(LoginRequiredMixin, HorillaMultiStepFormView):
             )
 
         branches_view_url = reverse_lazy("horilla_core:branches_view")
-        response_html = (
-            f"<span "
-            f'hx-trigger="load" '
-            f'hx-get="{branches_view_url}" '
-            f'hx-select="#branches-view" '
-            f'hx-target="#branches-view" '
-            f'hx-swap="outerHTML" '
-            f'hx-on::after-request="closeModal();"'
-            f'hx-select-oob="#dropdown-companies">'
-            f"</span>"
+        response_html = format_html(
+            "<span "
+            'hx-trigger="load" '
+            'hx-get="{}" '
+            'hx-select="#branches-view" '
+            'hx-target="#branches-view" '
+            'hx-swap="outerHTML" '
+            'hx-on::after-request="closeModal();" '
+            'hx-select-oob="#dropdown-companies">'
+            "</span>",
+            branches_view_url,
         )
-        return HttpResponse(mark_safe(response_html))
+
+        return HttpResponse(response_html)
 
     step_titles = {
         "1": _("Basic Information"),
@@ -573,7 +576,11 @@ class CompanyFormView(LoginRequiredMixin, HorillaSingleFormView):
         for _receiver, response in responses:
             if isinstance(response, HttpResponse):
                 wrapped_response = HttpResponse(
-                    f'<div id="{self.view_id}-container">{response.content.decode()}</div>'
+                    format_html(
+                        '<div id="{}-container">{}</div>',
+                        self.view_id,
+                        mark_safe(response.content.decode()),
+                    )
                 )
                 return wrapped_response
 
@@ -583,18 +590,20 @@ class CompanyFormView(LoginRequiredMixin, HorillaSingleFormView):
             )
         branches_view_url = reverse_lazy("horilla_core:branches_view")
 
-        response_html = (
-            f"<span "
-            f'hx-trigger="load" '
-            f'hx-get="{branches_view_url}" '
-            f'hx-select="#branches-view" '
-            f'hx-target="#branches-view" '
-            f'hx-swap="outerHTML" '
-            f'hx-on::after-request="closeModal();"'
-            f'hx-select-oob="#dropdown-companies">'
-            f"</span>"
+        response_html = format_html(
+            "<span "
+            'hx-trigger="load" '
+            'hx-get="{}" '
+            'hx-select="#branches-view" '
+            'hx-target="#branches-view" '
+            'hx-swap="outerHTML" '
+            'hx-on::after-request="closeModal();" '
+            'hx-select-oob="#dropdown-companies">'
+            "</span>",
+            branches_view_url,
         )
-        return HttpResponse(mark_safe(response_html))
+
+        return HttpResponse(response_html)
 
 
 @method_decorator(
@@ -614,7 +623,7 @@ class SwitchCompanyView(LoginRequiredMixin, View):
             or request.user.company_id == company_id
         ):
             request.session["active_company_id"] = company_id
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        return HorillaRedirectResponse(self.request)
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -724,7 +733,6 @@ class HolidayListView(LoginRequiredMixin, HorillaListView):
     view_id = "holiday-list-view"
     table_width = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     search_url = reverse_lazy("horilla_core:holiday_list_view")
     store_ordered_ids = True
 
@@ -1045,7 +1053,6 @@ class BusinessHourListView(LoginRequiredMixin, HorillaListView):
     view_id = "business-hour-list-view"
     table_width = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     search_url = reverse_lazy("horilla_core:business_hour_list_view")
     store_ordered_ids = True
 
@@ -1124,6 +1131,7 @@ class BusinessHourFormView(LoginRequiredMixin, HorillaSingleFormView):
     form_class = BusinessHourForm
     view_id = "business-hour-form-view"
     form_title = "Business Hour Form"
+    full_width_fields = ["timing_type", "week_days"]
     hidden_fields = ["company"]
     return_response = HttpResponse(
         "<script>closeModal();$('#reloadButton').click();$('#detailViewReloadButton').click();</script>"
@@ -1265,7 +1273,7 @@ class GetCountrySubdivisionsView(LoginRequiredMixin, View):
             HttpResponse: HTML string containing option elements for subdivisions.
         """
         country_code = request.GET.get("country")
-        options = '<option value="">Select State</option>'
+        options = mark_safe('<option value="">Select State</option>')
 
         if country_code:
             subdivisions = pycountry.subdivisions.get(country_code=country_code.upper())

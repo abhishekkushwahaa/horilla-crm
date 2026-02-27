@@ -17,14 +17,14 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from horilla.auth.models import User
-
-# First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
+
+# First-party / Horilla imports
+from horilla.utils.shortcuts import get_object_or_404
 from horilla_core.filters import RoleFilter, UserFilter
 from horilla_core.forms import AddUsersToRoleForm
 from horilla_core.models import Role
@@ -410,6 +410,7 @@ class RolesHierarchyView(LoginRequiredMixin, TemplateView):
     template_name = "role/role.html"
 
     def get_context_data(self, **kwargs):
+        """Add role tree, companies, and show_all_companies to context."""
         context = super().get_context_data(**kwargs)
         show_all_companies = self.request.session.get("show_all_companies", False)
 

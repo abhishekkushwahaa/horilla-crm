@@ -16,13 +16,14 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 
-# First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
+
+# First-party / Horilla imports
+from horilla.utils.shortcuts import get_object_or_404
 from horilla_core.models import RecycleBin, RecycleBinPolicy
 from horilla_core.utils import delete_recycle_bin_records, restore_recycle_bin_records
 from horilla_generics.views import HorillaListView, HorillaNavView, HorillaView
@@ -78,7 +79,6 @@ class RecycleBinListView(LoginRequiredMixin, HorillaListView):
     bulk_export_option = False
     table_height = False
     table_height_as_class = "h-[500px]"
-    clear_session_button_enabled = False
 
     custom_bulk_actions = [
         {

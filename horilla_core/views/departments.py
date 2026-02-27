@@ -11,7 +11,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 # First-party imports (Horilla)
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,

@@ -9,7 +9,7 @@ from urllib.parse import urlencode, urlparse
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.template.loader import render_to_string
+from django.shortcuts import render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
@@ -17,7 +17,7 @@ from django.views.generic import TemplateView, View
 
 # First-party / Horilla imports
 from horilla.auth.models import User
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
@@ -391,6 +391,7 @@ class GetCompanyRelatedFieldsView(LoginRequiredMixin, View):
     """HTMX endpoint to get role, department, and currency fields based on selected company"""
 
     def get(self, request):
+        """Return roles, departments, and currencies for selected company for HTMX."""
         company_list = request.GET.getlist("company")
         company_id = company_list[-1] if company_list else request.GET.get("company")
         user_pk = request.GET.get("user_pk")
@@ -437,8 +438,7 @@ class GetCompanyRelatedFieldsView(LoginRequiredMixin, View):
             except (Company.DoesNotExist, ValueError, TypeError):
                 pass
 
-        html = render_to_string("settings/users/company_related_fields.html", context)
-        return HttpResponse(html)
+        return render(request, "settings/users/company_related_fields.html", context)
 
 
 @method_decorator(htmx_required, name="dispatch")

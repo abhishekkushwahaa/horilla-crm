@@ -10,9 +10,9 @@ import logging
 import zipfile
 from datetime import date, datetime
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
-# Third-party imports
-import pytz
+# Django imports (third-party)
 from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -26,15 +26,16 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import TemplateView
+
+# Third-party imports
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-from horilla.registry.feature import FEATURE_REGISTRY
-
 # First-party (Horilla)
-from horilla_core.decorators import htmx_required, permission_required_or_denied
+from horilla.decorator import htmx_required, permission_required_or_denied
+from horilla.registry.feature import FEATURE_REGISTRY
 from horilla_core.models import ExportSchedule
 from horilla_generics.views import HorillaListView, HorillaSingleDeleteView
 
@@ -165,7 +166,7 @@ class ExportView(LoginRequiredMixin, TemplateView):
         """
 
         tz_str = getattr(self.request.user, "time_zone", None)
-        user_tz = pytz.timezone(tz_str) if tz_str else pytz.UTC
+        user_tz = ZoneInfo(tz_str) if tz_str else ZoneInfo("UTC")
         dt_format = (
             getattr(self.request.user, "date_time_format", None) or "%Y-%m-%d %H:%M:%S"
         )
@@ -418,7 +419,7 @@ def get_export_cell_value(obj, field_name, field, user):
             if isinstance(value, datetime):
                 if getattr(user, "time_zone", None):
                     try:
-                        user_tz = pytz.timezone(user.time_zone)
+                        user_tz = ZoneInfo(user.time_zone)
                         if timezone.is_naive(value):
                             value = timezone.make_aware(
                                 value, timezone.get_default_timezone()
@@ -585,7 +586,6 @@ class ExportScheduleCreateView(LoginRequiredMixin, View):
             if not start_date:
                 field_errors["start_date"] = _("Start date is required.")
             else:
-                from datetime import datetime
 
                 try:
                     start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()

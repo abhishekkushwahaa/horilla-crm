@@ -13,17 +13,19 @@ from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView
 
-# Horilla first-party imports
-from horilla.exceptions import HorillaHttp404
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
+from horilla.exceptions import HorillaHttp404
+
+# Horilla first-party imports
+from horilla.http import HorillaRefreshResponse
 from horilla_core.filters import CompanyFilter
 from horilla_core.models import Company
 from horilla_generics.views import (
@@ -196,6 +198,7 @@ class BranchDetailView(LoginRequiredMixin, DetailView):
     model = Company
 
     def dispatch(self, request, *args, **kwargs):
+        """Require auth, resolve object, and return HX-Refresh or 404 on error."""
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
         try:
@@ -203,11 +206,12 @@ class BranchDetailView(LoginRequiredMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HttpResponse(headers={"HX-Refresh": "true"})
+                return HorillaRefreshResponse(request)
             raise HorillaHttp404(e)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """Add current_obj (company) to template context."""
         context = super().get_context_data(**kwargs)
         current_obj = self.get_object()
         context["current_obj"] = current_obj
@@ -234,17 +238,18 @@ class BranchDeleteView(LoginRequiredMixin, HorillaSingleDeleteView):
 
     def get_post_delete_response(self):
         branches_view_url = reverse_lazy("horilla_core:branches_view")
-        response_html = (
-            f"<span "
-            f'hx-trigger="load" '
-            f'hx-get="{branches_view_url}" '
-            f'hx-select="#branches-view" '
-            f'hx-target="#branches-view" '
-            f'hx-swap="outerHTML" '
-            f'hx-select-oob="#dropdown-companies">'
-            f"</span>"
+        response_html = format_html(
+            "<span "
+            'hx-trigger="load" '
+            'hx-get="{}" '
+            'hx-select="#branches-view" '
+            'hx-target="#branches-view" '
+            'hx-swap="outerHTML" '
+            'hx-select-oob="#dropdown-companies">'
+            "</span>",
+            branches_view_url,
         )
-        response = HttpResponse(mark_safe(response_html))
+        response = HttpResponse(response_html)
         response["HX-Retarget"] = "#branches-view"
         response["HX-Reswap"] = "innerHTML"
         return response

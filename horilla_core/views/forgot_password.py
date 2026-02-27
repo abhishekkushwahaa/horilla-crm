@@ -7,13 +7,14 @@ Includes HTMX support for dynamic interactions.
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMessage
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
-from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes, force_str
 from django.utils.html import strip_tags
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -21,7 +22,6 @@ from django.views import View
 
 # First-party / Horilla imports
 from horilla.auth.models import User
-from horilla_core.decorators import htmx_required
 from horilla_core.models import Company
 from horilla_mail.models import HorillaMailConfiguration
 
@@ -157,20 +157,27 @@ class PasswordResetConfirmView(View):
                 messages.error(request, "Please fill in all password fields.")
             elif new_password != confirm_password:
                 messages.error(request, "Passwords do not match.")
-
             else:
-                user.set_password(new_password)
-                user.save()
-                update_session_auth_hash(request, user)
-                messages.success(request, "Your password has been reset successfully.")
+                try:
+                    validate_password(new_password, user=user)
+                except ValidationError as e:
+                    for message in e.messages:
+                        messages.error(request, message)
+                else:
+                    user.set_password(new_password)
+                    user.save()
+                    update_session_auth_hash(request, user)
+                    messages.success(
+                        request, "Your password has been reset successfully."
+                    )
 
-                if request.headers.get("HX-Request") == "true":
-                    response = HttpResponse()
-                    response["HX-Redirect"] = "/login/"
-                    response["HX-Push-Url"] = "/login/"
-                    return response
+                    if request.headers.get("HX-Request") == "true":
+                        response = HttpResponse()
+                        response["HX-Redirect"] = "/login/"
+                        response["HX-Push-Url"] = "/login/"
+                        return response
 
-                return redirect("horilla_core:login")
+                    return redirect("horilla_core:login")
 
             context = {
                 "validlink": True,

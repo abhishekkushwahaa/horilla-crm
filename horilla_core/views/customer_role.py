@@ -12,7 +12,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 # First-party imports (Horilla core & apps)
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
@@ -26,7 +26,6 @@ from horilla_generics.views import (
     HorillaSingleFormView,
     HorillaView,
 )
-from horilla_notifications.methods import create_notification
 
 
 class CustomerRoleView(LoginRequiredMixin, HorillaView):
@@ -177,6 +176,7 @@ class CustomerRoleFormView(LoginRequiredMixin, HorillaSingleFormView):
         return reverse_lazy("horilla_core:customer_role_create_form")
 
     def post(self, request, *args, **kwargs):
+        """Delegate to parent post for form submission."""
         return super().post(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):

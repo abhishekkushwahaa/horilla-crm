@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 
 # First-party / Horilla imports
-from horilla_core.decorators import htmx_required
+from horilla.decorator import htmx_required
 from horilla_generics.views import HorillaListView, HorillaNavView, HorillaView
 
 

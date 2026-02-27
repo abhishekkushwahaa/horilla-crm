@@ -40,11 +40,12 @@ from django.views.generic import TemplateView, View
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
+from horilla.decorator import htmx_required, permission_required_or_denied
+
 # First-party (Horilla)
 from horilla.exceptions import HorillaHttp404
 from horilla.registry.feature import FEATURE_REGISTRY
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
-from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.models import ImportHistory
 from horilla_generics.views import HorillaListView, HorillaTabView
 
@@ -121,6 +122,7 @@ class ImportDataView(TemplateView):
     template_name = "import/import_data.html"
 
     def get(self, request, *args, **kwargs):
+        """Set session import config for single or multi import and render import page."""
         context = self.get_context_data(**kwargs)
 
         single_import = request.GET.get("single_import", "false").lower() == "true"
@@ -147,6 +149,7 @@ class ImportDataView(TemplateView):
         return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
+        """Add available import modules to context."""
         context = super().get_context_data(**kwargs)
         context["modules"] = self.get_available_models()
         return context
@@ -259,7 +262,7 @@ class ImportStep1View(View):
             if not all([module, import_name]):
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {
                         "message": _("Module and Import Name are required"),
                         "variant": "sm",
@@ -286,7 +289,7 @@ class ImportStep1View(View):
                     if not model_fields:
                         return render(
                             request,
-                            "import/partials/message_fragment.html",
+                            "common/message_fragment.html",
                             {
                                 "message": f"{_('No valid fields found for the selected model')}: {module}",
                                 "variant": "sm",
@@ -341,7 +344,7 @@ class ImportStep1View(View):
                     logger.error(tb)
                     return render(
                         request,
-                        "import/partials/message_fragment.html",
+                        "common/message_fragment.html",
                         {
                             "message": f"Error processing module change: {e!s}",
                             "variant": "sm",
@@ -352,14 +355,14 @@ class ImportStep1View(View):
         if not all([module, import_name, uploaded_file]):
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": _("All fields are required"), "variant": "sm"},
             )
 
         if not uploaded_file.name.endswith((".csv", ".xlsx", ".xls")):
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": _("Please upload a CSV or Excel file"), "variant": "sm"},
             )
 
@@ -392,7 +395,7 @@ class ImportStep1View(View):
             if not model_fields:
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {
                         "message": f"{_('No valid fields found for the selected model')}: {module}",
                         "variant": "sm",
@@ -433,7 +436,7 @@ class ImportStep1View(View):
             logger.error(tb)
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": f"Error processing file: {e!s}", "variant": "sm"},
             )
 
@@ -776,7 +779,7 @@ class ImportStep2View(View):
         if not model_fields:
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {
                     "message": f"{_('No valid fields found for the selected model')}: {module}",
                     "variant": "sm",
@@ -888,7 +891,7 @@ class ImportStep2View(View):
         if not module or not app_label:
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {
                     "message": _("Missing module or app_label in session"),
                     "variant": "sm",
@@ -906,7 +909,7 @@ class ImportStep2View(View):
             if not model_fields:
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {
                         "message": f"{_('No valid fields found for the selected model')}: {module}",
                         "variant": "sm",
@@ -1293,7 +1296,7 @@ class ImportStep2View(View):
             logger.error(tb)
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {
                     "message": f"{_('Error processing field mappings')}: {e!s}",
                     "variant": "sm",
@@ -1397,7 +1400,7 @@ class ImportStep3View(View):
         if not module or not app_label:
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {
                     "message": _("Missing module or app_label in session"),
                     "variant": "sm",
@@ -1459,7 +1462,7 @@ class ImportStep3View(View):
                 logger.error(tb)
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {
                         "message": f"Template rendering error: {e!s}",
                         "variant": "sm",
@@ -1472,7 +1475,7 @@ class ImportStep3View(View):
             logger.error(tb)
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {
                     "message": f"Error processing import options: {e!s}",
                     "variant": "sm",
@@ -1585,7 +1588,7 @@ class ImportStep4View(View):
         if not import_data:
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": _("No import data found in session"), "variant": "sm"},
             )
 
@@ -1657,7 +1660,7 @@ class ImportStep4View(View):
 
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": f"Error during import: {e!s}", "variant": "sm"},
             )
 
@@ -2376,7 +2379,7 @@ class GetModelFieldsView(View):
             if not field:
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {
                         "message": f"Field not found: {field_name}",
                         "variant": "border",
@@ -2429,7 +2432,7 @@ class GetModelFieldsView(View):
             logger.error(tb)
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": f"Error: {e!s}", "variant": "border"},
             )
 
@@ -2449,12 +2452,12 @@ class UpdateFieldStatusView(View):
         if file_header:
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": _("Mapped"), "variant": "success_badge"},
             )
         return render(
             request,
-            "import/partials/message_fragment.html",
+            "common/message_fragment.html",
             {"message": _("Not Mapped"), "variant": "badge"},
         )
 
@@ -2500,7 +2503,7 @@ class GetUniqueValuesView(View):
             if not field:
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {
                         "message": f"Field not found: {field_name}",
                         "variant": "border",
@@ -2553,7 +2556,7 @@ class GetUniqueValuesView(View):
             logger.error(tb)
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": f"Error: {e!s}", "variant": "border"},
             )
 
@@ -2577,7 +2580,7 @@ class UpdateValueMappingStatusView(View):
         if not all([field_name, slug_value, value]):
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": _("Error: Missing parameters"), "variant": "badge"},
             )
 
@@ -2591,7 +2594,7 @@ class UpdateValueMappingStatusView(View):
             if not field:
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {"message": _("Error: Field not found"), "variant": "badge"},
                 )
 
@@ -2611,7 +2614,7 @@ class UpdateValueMappingStatusView(View):
             else:
                 return render(
                     request,
-                    "import/partials/message_fragment.html",
+                    "common/message_fragment.html",
                     {"message": _("Error: Invalid field type"), "variant": "badge"},
                 )
 
@@ -2620,7 +2623,7 @@ class UpdateValueMappingStatusView(View):
 
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": _("Mapped"), "variant": "success_badge"},
             )
         except Exception as e:
@@ -2628,7 +2631,7 @@ class UpdateValueMappingStatusView(View):
             logger.error(tb)
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": f"Error: {e!s}", "variant": "badge"},
             )
 
@@ -2747,7 +2750,7 @@ class DownloadImportedFileView(LoginRequiredMixin, View):
             logger.error(tb)
             return render(
                 request,
-                "import/partials/message_fragment.html",
+                "common/message_fragment.html",
                 {"message": f"Error downloading imported file: {e!s}", "variant": "sm"},
                 status=500,
             )
@@ -2776,6 +2779,7 @@ class DownloadTemplateModalView(LoginRequiredMixin, TemplateView):
             return False
 
     def get_context_data(self, **kwargs):
+        """Add module, app_label, and import config to context; set error if invalid module."""
         context = super().get_context_data(**kwargs)
         module = self.request.GET.get("module")
 
@@ -2927,7 +2931,7 @@ class DownloadTemplateView(LoginRequiredMixin, View):
                 try:
                     field = model._meta.get_field(field_name)
                     field_headers.append(field.verbose_name.title())
-                except:
+                except Exception:
                     field_headers.append(field_name)
 
             # Get model verbose name for filename (lowercase)

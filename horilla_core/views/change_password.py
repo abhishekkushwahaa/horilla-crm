@@ -20,7 +20,7 @@ from django.views.generic import FormView, TemplateView
 
 # Horilla first-party imports
 from horilla.auth.models import User
-from horilla_core.decorators import htmx_required
+from horilla.decorator import htmx_required
 from horilla_core.forms import ChangePasswordForm
 
 
@@ -34,6 +34,7 @@ class ChangePasswordView(LoginRequiredMixin, TemplateView):
     template_name = "settings/change_password.html"
 
     def get_context_data(self, **kwargs):
+        """Add user and last password update time from audit log to context."""
         context = super().get_context_data(**kwargs)
         user = self.request.user
         model_name = User._meta.model_name
@@ -72,11 +73,13 @@ class ChangePasswordFormView(LoginRequiredMixin, FormView):
     form_class = ChangePasswordForm
 
     def get_form_kwargs(self):
+        """Pass current user to the form for password validation."""
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
         return kwargs
 
     def form_valid(self, form):
+        """Update password, refresh session hash, and return close/reload script."""
         user = self.request.user
         new_password = form.cleaned_data["new_password"]
         user.set_password(new_password)
@@ -88,6 +91,7 @@ class ChangePasswordFormView(LoginRequiredMixin, FormView):
         return HttpResponse("<script>closeModal();$('#reloadButton').click();</script>")
 
     def form_invalid(self, form):
+        """Re-render the change password form with validation errors."""
         return render(
             self.request,
             self.template_name,

@@ -13,6 +13,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils.decorators import method_decorator
@@ -21,16 +22,16 @@ from django.views import View
 from django.views.generic.edit import FormView
 
 # First-party / Horilla imports
-from horilla_core.decorators import htmx_required, permission_required_or_denied
+from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla_core.forms import ConversionRateForm, CurrencyForm, DatedConversionRateForm
+
+# Local app imports
+from horilla_core.models import DatedConversionRate, MultipleCurrency
 from horilla_generics.views import (
     HorillaListView,
     HorillaSingleDeleteView,
     HorillaSingleFormView,
 )
-
-# Local app imports
-from .models import DatedConversionRate, MultipleCurrency
 
 logger = logging.getLogger(__name__)
 
@@ -92,30 +93,27 @@ class FetchExchangeRateView(LoginRequiredMixin, View):
             company=company, is_default=True
         ).first()
 
-        # Helper HTML for the conversion_rate input
-        def _conversion_input_html(value: str = "") -> str:
-            return (
-                '<input type="number" name="conversion_rate" step="0.0001" '
-                'class="text-color-600 p-2 placeholder:text-xs font-normal w-full '
-                "border border-dark-50 rounded-md focus-visible:outline-0 "
-                "placeholder:text-dark-100 text-sm transition duration-300 "
-                'focus:border-primary-600" id="id_conversion_rate" '
-                f'value="{value}" />'
+        # Render conversion_rate input via template engine (value auto-escaped, XSS-safe)
+        def _conversion_input_response(value):
+            return render(
+                request,
+                "settings/conversion_rate_input.html",
+                {"value": value},
             )
 
         # If currency or default not available, keep the input and let user type manually
         if not currency_code or not default_currency:
-            return HttpResponse(_conversion_input_html(""))
+            return _conversion_input_response("")
 
         # Don't fetch rate if selecting the same as default currency
         if currency_code == default_currency.currency:
-            return HttpResponse(_conversion_input_html("1.0000"))
+            return _conversion_input_response("1.0000")
 
         # Fetch exchange rate from free API
         rate = fetch_exchange_rate_from_api(default_currency.currency, currency_code)
 
         if rate:
-            return HttpResponse(_conversion_input_html(str(rate)))
+            return _conversion_input_response(rate)
 
         logger.warning(
             "Exchange rate not available for %s to %s",
@@ -123,7 +121,7 @@ class FetchExchangeRateView(LoginRequiredMixin, View):
             currency_code,
         )
         # Keep an empty input so the user can manually enter the rate
-        return HttpResponse(_conversion_input_html(""))
+        return _conversion_input_response("")
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -136,7 +134,6 @@ class CurrencyListView(LoginRequiredMixin, HorillaListView):
     view_id = "currency-list-view"
     table_width = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     table_height = False
     table_height_as_class = "h-[400px]"
     search_url = reverse_lazy("horilla_core:currency_list_view")
@@ -441,7 +438,7 @@ class ChangeDefaultCurrencyFormView(LoginRequiredMixin, FormView):
             )
         except ValueError as e:
             logger.error("Error updating DatedConversionRate: %s", e)
-            return HttpResponseBadRequest(f"Failed to update conversion rates: {e}")
+            return HttpResponseBadRequest("Failed to update conversion rates.")
 
     def form_invalid(self, form):
         """Handle invalid form submission."""
@@ -515,6 +512,7 @@ class AddCurrencyView(LoginRequiredMixin, HorillaSingleFormView):
         return form
 
     def get_initial(self):
+        """Set initial company from request active_company or user company."""
         initial = super().get_initial()
         initial["company"] = getattr(self.request, "active_company", None)
         if not initial["company"]:
@@ -545,12 +543,14 @@ class ConversionRateFormView(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("settings:currency_list")
 
     def get_form_kwargs(self):
+        """Pass current company to the conversion rate form."""
         kwargs = super().get_form_kwargs()
         company = getattr(self.request, "active_company", None)
         kwargs["company"] = company if company else self.request.user.company
         return kwargs
 
     def form_valid(self, form):
+        """Update default currency and conversion rates; return tab trigger script."""
         company = getattr(self.request, "active_company", None)
         new_default = form.cleaned_data.get("new_default_currency")
 
@@ -582,9 +582,11 @@ class ConversionRateFormView(LoginRequiredMixin, FormView):
         )
 
     def form_invalid(self, form):
+        """Re-render conversion rate form with validation errors."""
         return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
+        """Add current_default and other_currencies for the company to context."""
         context = super().get_context_data(**kwargs)
         company = getattr(self.request, "active_company", None)
         if company:
@@ -612,12 +614,14 @@ class DatedConversionRateFormView(LoginRequiredMixin, FormView):
     success_url = reverse_lazy("settings:dated_conversion_rate_list")
 
     def get_form_kwargs(self):
+        """Pass current company to the dated conversion rate form."""
         kwargs = super().get_form_kwargs()
         company = getattr(self.request, "active_company", None)
         kwargs["company"] = company if company else self.request.user.company
         return kwargs
 
     def form_valid(self, form):
+        """Create DatedConversionRate for each non-default currency; return tab trigger script."""
         company = (
             getattr(self.request, "active_company", None) or self.request.user.company
         )
@@ -646,9 +650,11 @@ class DatedConversionRateFormView(LoginRequiredMixin, FormView):
         )
 
     def form_invalid(self, form):
+        """Re-render dated conversion rate form with validation errors."""
         return super().form_invalid(form)
 
     def get_context_data(self, **kwargs):
+        """Add current_default and other_currencies for the company to context."""
         context = super().get_context_data(**kwargs)
         company = (
             getattr(self.request, "active_company", None) or self.request.user.company
@@ -675,7 +681,6 @@ class DatedCurrencyListView(LoginRequiredMixin, HorillaListView):
     view_id = "dated-currency-list-view"
     table_width = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     search_url = reverse_lazy("horilla_core:dated_currency_list_view")
     main_url = reverse_lazy("horilla_core:dated_currency_list_view")
     enable_sorting = False

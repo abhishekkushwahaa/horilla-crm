@@ -29,7 +29,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 # First-party / Horilla imports
 from horilla.auth.models import User
-from horilla_core.decorators import db_initialization, htmx_required
+from horilla.decorator import db_initialization, htmx_required
+from horilla.http import safe_url
 from horilla_core.forms import CompanyFormClass, UserFormClassSingle
 from horilla_core.models import Company, Role
 from horilla_core.progress import ProgressStepsMixin
@@ -58,7 +59,7 @@ class InitializeDatabase(View, ProgressStepsMixin):
         """Handle GET requests for database initialization."""
         condition_view = InitializeDatabaseConditionView()
         initialize_database = condition_view.get_initialize_condition()
-        next_url = request.GET.get("next", "/")
+        next_url = safe_url(request, request.GET.get("next", "/"))
         if initialize_database:
             context = {
                 "progress_steps": self.get_progress_steps(),
@@ -79,7 +80,7 @@ class InitializeDatabaseUser(View, ProgressStepsMixin):
         """Handle GET requests for user creation during database initialization."""
         condition_view = InitializeDatabaseConditionView()
         initialize_database = condition_view.get_initialize_condition()
-        next_url = request.GET.get("next", "/")
+        next_url = safe_url(request, request.GET.get("next", "/"))
         if (
             request.session.get("db_password") == settings.DB_INIT_PASSWORD
             and initialize_database
@@ -119,7 +120,7 @@ class InitializeDatabaseCompany(LoginRequiredMixin, View, ProgressStepsMixin):
 
     def get(self, request, *args, **kwargs):
         """Handle GET requests for company creation during database initialization."""
-        next_url = request.GET.get("next", "/")
+        next_url = safe_url(request, request.GET.get("next", "/"))
         if request.session.get("db_password") == settings.DB_INIT_PASSWORD:
             context = {
                 "progress_steps": self.get_progress_steps(),
@@ -263,7 +264,7 @@ class InitializeRoleView(LoginRequiredMixin, View, ProgressStepsMixin):
 
     def get(self, request, *args, **kwargs):
         """Handle GET requests for role creation during database initialization."""
-        next_url = request.GET.get("next", "/")
+        next_url = safe_url(request, request.GET.get("next", "/"))
         company_id = request.GET.get("company_id") or request.session.get("company_id")
         edit_role_id = request.GET.get("edit_role")
         roles = Role.objects.all()
@@ -297,7 +298,7 @@ class InitializeRoleView(LoginRequiredMixin, View, ProgressStepsMixin):
         role_name = request.POST.get("role_name")
         description = request.POST.get("description")
         parent_role_id = request.POST.get("parent_role")
-        next_url = request.POST.get("next", "/")
+        next_url = safe_url(request, request.POST.get("next", "/"))
         delete_role_id = request.POST.get("delete_role")
         edit_role_id = request.POST.get("edit_role_id")
 

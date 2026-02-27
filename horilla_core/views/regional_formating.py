@@ -22,6 +22,7 @@ class ReginalFormatingView(LoginRequiredMixin, FormView):
     form_class = RegionalFormattingForm
 
     def get(self, request, *args, **kwargs):
+        """Render regional formatting form with current user instance."""
         form = RegionalFormattingForm(instance=request.user)
         context = {
             "form": form,
@@ -30,11 +31,13 @@ class ReginalFormatingView(LoginRequiredMixin, FormView):
         return render(request, self.template_name, context)
 
     def get_form_kwargs(self):
+        """Pass current user as form instance."""
         kwargs = super().get_form_kwargs()
         kwargs["instance"] = self.request.user
         return kwargs
 
     def form_valid(self, form):
+        """Save preferences and re-render form with success message."""
         form.save()
         messages.success(
             self.request, _("Your preferences have been updated successfully.")
@@ -46,5 +49,6 @@ class ReginalFormatingView(LoginRequiredMixin, FormView):
         return render(self.request, self.template_name, context)
 
     def form_invalid(self, form):
+        """Show error message and re-render form with validation errors."""
         messages.error(self.request, _("There was an error updating your preferences."))
         return self.render_to_response(self.get_context_data(form=form))
