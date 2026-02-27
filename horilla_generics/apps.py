@@ -15,6 +15,7 @@ class HorillaGenericsConfig(AppConfig):
     name = "horilla_generics"
 
     def ready(self):
+        """Run when Django starts: register URLs and import signals."""
         try:
             # Auto-register this app's URLs and add to installed apps
             from django.urls import include, path

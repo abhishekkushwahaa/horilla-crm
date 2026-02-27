@@ -15,6 +15,7 @@ class RecentlyViewedMixin(LoginRequiredMixin):
     """Mixin for automatically tracking recently viewed objects for authenticated users."""
 
     def dispatch(self, request, *args, **kwargs):
+        """Dispatch request and record the viewed object in RecentlyViewed for the user."""
         response = super().dispatch(request, *args, **kwargs)
         if hasattr(self, "object") and self.object and request.user.is_authenticated:
             RecentlyViewed.objects.add_viewed_item(request.user, self.object)
