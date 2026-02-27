@@ -1,7 +1,6 @@
 """Custom exception classes for the Horilla application."""
 
-from django.http import HttpResponse
-from django.template.loader import render_to_string
+from django.shortcuts import render
 from django.utils.translation import gettext_lazy as _
 
 
@@ -39,9 +38,9 @@ class HorillaHttp404(Exception):
         Returns:
             HttpResponse: A rendered 404 response.
         """
-        html = render_to_string(
+        return render(
+            request,
             self.template,
             {**self.context, "error_message": self.message},
-            request=request,
+            status=404,
         )
-        return HttpResponse(html, status=404)
