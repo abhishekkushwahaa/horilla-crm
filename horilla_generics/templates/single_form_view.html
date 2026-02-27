@@ -325,8 +325,8 @@
                                                                     hx-get="{% url 'horilla_generics:get_field_value_widget' %}"
                                                                     hx-target="#id_value_{{ forloop.parentloop.counter }}_container"
                                                                     hx-swap="innerHTML"
-                                                                    hx-include="[name='{{ field_name }}_{{ forloop.parentloop.counter }}'],[name='operator_{{ forloop.parentloop.counter }}']"
-                                                                    hx-vals='{"model_name": "{{ form.model_name }}", "row_id": "{{ forloop.parentloop.counter }}", "condition_model": "{{ condition_model_str|escapejs }}", "field_{{ forloop.parentloop.counter }}": "{{ field_val|escapejs }}", "value_{{ forloop.parentloop.counter }}": "{{ value_val|escapejs }}", "operator_{{ forloop.parentloop.counter }}": "{{ operator_val|escapejs }}"}'
+                                                                    hx-include="[name='{{ field_name }}_{{ forloop.parentloop.counter }}'],[name='operator_{{ forloop.parentloop.counter }}'],[name='value_{{ forloop.parentloop.counter }}']"
+                                                                    hx-vals='{"model_name": "{{ form.model_name }}", "row_id": "{{ forloop.parentloop.counter }}", "condition_model": "{{ condition_model_str|escapejs }}", "value_{{ forloop.parentloop.counter }}": "{{ value_val|escapejs }}", "operator_{{ forloop.parentloop.counter }}": "{{ operator_val|escapejs }}"}'
                                                                     hx-trigger="change,load"
                                                                 {% endif %}>
                                                             {% for choice in condition_field_choices|get_item_form:field_name %}
