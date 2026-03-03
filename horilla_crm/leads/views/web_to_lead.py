@@ -8,21 +8,25 @@ from urllib.parse import urlparse
 from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils import translation
-from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, FormView, TemplateView
 
-# First-party / Horilla imports
 from horilla.auth.models import User
-from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.exceptions import HorillaHttp404
 from horilla.http.response import HorillaRedirectResponse
+
+# First-party / Horilla imports
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
 
 # Local application imports
 from horilla_crm.leads.models import Lead, LeadCaptureForm, LeadStatus

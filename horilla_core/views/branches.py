@@ -11,21 +11,21 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponse
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.html import format_html
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView
 
-from horilla.decorator import (
-    htmx_required,
-    permission_required,
-    permission_required_or_denied,
-)
 from horilla.exceptions import HorillaHttp404
 
 # Horilla first-party imports
 from horilla.http import HorillaRefreshResponse
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.filters import CompanyFilter
 from horilla_core.models import Company
 from horilla_generics.views import (

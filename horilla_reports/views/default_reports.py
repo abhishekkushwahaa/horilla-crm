@@ -10,11 +10,10 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
-from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, View
 
 # First-party (Horilla) imports
-from horilla.decorator import htmx_required
+from horilla.utils.decorators import htmx_required, method_decorator
 
 # Local application imports
 from horilla_reports.models import Report, ReportFolder

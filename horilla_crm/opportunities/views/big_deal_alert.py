@@ -7,17 +7,19 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import View
 
-from horilla.decorator import htmx_required, permission_required_or_denied
-
 # First-party / Horilla imports
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_automations.filters import HorillaAutomationFilter
 from horilla_automations.models import HorillaAutomation
 from horilla_automations.views import HorillaAutomationFormView

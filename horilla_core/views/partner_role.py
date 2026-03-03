@@ -10,15 +10,15 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 
 # First-party / Horilla imports
-from horilla.decorator import (
+from horilla.utils.decorators import (
     htmx_required,
+    method_decorator,
     permission_required,
     permission_required_or_denied,
 )
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.filters import PartnerRoleFilter
 from horilla_core.models import PartnerRole
 from horilla_generics.views import (

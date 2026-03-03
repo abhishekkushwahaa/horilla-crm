@@ -13,16 +13,19 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils.dateparse import parse_date
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic.edit import FormView
 
 # First-party / Horilla imports
-from horilla.decorator import htmx_required, permission_required_or_denied
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.forms import ConversionRateForm, CurrencyForm, DatedConversionRateForm
 
 # Local app imports

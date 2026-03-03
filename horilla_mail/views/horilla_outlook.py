@@ -11,18 +11,20 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core import cache
 from django.http import HttpResponse
-from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from requests_oauthlib import OAuth2Session
 
-from horilla.decorator import htmx_required, permission_required_or_denied
-
 # First-party / Horilla imports
 from horilla.http import HorillaRedirectResponse
+from horilla.shortcuts import redirect
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.views import HorillaSingleFormView
 from horilla_mail.forms import OutlookMailConfigurationForm
 from horilla_mail.models import HorillaMailConfiguration

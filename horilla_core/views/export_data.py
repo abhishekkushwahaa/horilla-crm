@@ -19,11 +19,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import ForeignKey
 from django.db.models.fields.related import ManyToManyField
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.text import slugify
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import TemplateView
 
@@ -33,9 +30,16 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-# First-party (Horilla)
-from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.registry.feature import FEATURE_REGISTRY
+
+# First-party (Horilla)
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import ExportSchedule
 from horilla_generics.views import HorillaListView, HorillaSingleDeleteView
 

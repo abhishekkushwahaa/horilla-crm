@@ -9,18 +9,21 @@ from django.contrib import messages
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property  # type: ignore
-from django.utils.translation import gettext as _
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 # First-party / Horilla imports
-from horilla.decorator import htmx_required, permission_required_or_denied
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext as _
 from horilla_activity.models import Activity
 from horilla_core.utils import get_user_field_permission
 from horilla_generics.views import HorillaSingleDeleteView, HorillaSingleFormView

@@ -20,17 +20,16 @@ and are protected using custom initialization guards and decorators.
 from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect, render
 from django.template import Context, Template
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 # First-party / Horilla imports
 from horilla.auth.models import User
-from horilla.decorator import db_initialization, htmx_required
 from horilla.http import safe_url
+from horilla.shortcuts import redirect, render
+from horilla.utils.decorators import db_initialization, htmx_required, method_decorator
 from horilla_core.forms import CompanyFormClass, UserFormClassSingle
 from horilla_core.models import Company, Role
 from horilla_core.progress import ProgressStepsMixin

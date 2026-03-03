@@ -9,19 +9,20 @@ from urllib.parse import urlencode, urlparse
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.urls import reverse, reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
 
-# First-party / Horilla imports
 from horilla.auth.models import User
-from horilla.decorator import (
+
+# First-party / Horilla imports
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
     htmx_required,
+    method_decorator,
     permission_required,
     permission_required_or_denied,
 )
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.filters import UserFilter
 from horilla_core.forms import ChangeUserCompanyForm, UserFormClass, UserFormSingle
 from horilla_core.models import Company, Department, MultipleCurrency, Role

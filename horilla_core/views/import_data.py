@@ -30,22 +30,24 @@ from django.core.files.storage import default_storage
 from django.db import connection, transaction
 from django.db.models import CharField, EmailField, ForeignKey, URLField
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.text import slugify
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
-from horilla.decorator import htmx_required, permission_required_or_denied
-
 # First-party (Horilla)
 from horilla.exceptions import HorillaHttp404
 from horilla.registry.feature import FEATURE_REGISTRY
+from horilla.shortcuts import redirect, render
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import ImportHistory
 from horilla_generics.views import HorillaListView, HorillaTabView
 

@@ -14,16 +14,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.html import escape
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 
-# First-party / Horilla imports
 from horilla.auth.models import User
-from horilla.decorator import htmx_required, permission_required_or_denied
+
+# First-party / Horilla imports
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_automations.filters import HorillaAutomationFilter
 from horilla_automations.forms import HorillaAutomationForm
 from horilla_automations.models import AutomationCondition, HorillaAutomation

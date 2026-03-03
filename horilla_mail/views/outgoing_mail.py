@@ -13,13 +13,16 @@ from django.core.mail import EmailMultiAlternatives
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.html import strip_tags
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView
 
 # First-party / Horilla imports
-from horilla.decorator import htmx_required, permission_required_or_denied
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.views import (
     HorillaListView,
     HorillaNavView,

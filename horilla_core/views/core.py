@@ -17,14 +17,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import FileResponse, HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils._os import safe_join
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property  # type: ignore
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import TemplateView
 from django.views.generic.base import RedirectView
@@ -35,12 +32,18 @@ from rest_framework_simplejwt.tokens import UntypedToken
 # First-party / Horilla imports
 from horilla import settings
 from horilla.auth.models import User
-from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.exceptions import HorillaHttp404
 from horilla.http import safe_url
 from horilla.http.response import HorillaRedirectResponse
+from horilla.shortcuts import redirect, render
 from horilla.utils.branding import load_branding
 from horilla.utils.choices import BLOCKED_EXTENSIONS
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.forms import (
     BusinessHourForm,
     CompanyFormClassSingle,

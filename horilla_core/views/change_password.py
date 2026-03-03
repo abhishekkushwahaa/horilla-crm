@@ -13,14 +13,13 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.shortcuts import render
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView
 
 # Horilla first-party imports
 from horilla.auth.models import User
-from horilla.decorator import htmx_required
+from horilla.shortcuts import render
+from horilla.utils.decorators import htmx_required, method_decorator
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.forms import ChangePasswordForm
 
 

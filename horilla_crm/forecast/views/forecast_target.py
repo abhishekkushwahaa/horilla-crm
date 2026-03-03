@@ -9,21 +9,21 @@ from functools import cached_property
 # Third party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 
 from horilla.auth.models import User
 
 # First-party / Horilla imports
-from horilla.decorator import (
+from horilla.shortcuts import render
+from horilla.utils.decorators import (
     htmx_required,
+    method_decorator,
     permission_required,
     permission_required_or_denied,
 )
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import Period, Role
 from horilla_crm.forecast.filters import ForecastTargetFilter
 from horilla_crm.forecast.forms import ForecastTargetForm

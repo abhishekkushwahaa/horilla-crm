@@ -6,16 +6,16 @@ This view handles the methods for department view
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
 
 # First-party imports (Horilla)
-from horilla.decorator import (
+from horilla.utils.decorators import (
     htmx_required,
+    method_decorator,
     permission_required,
     permission_required_or_denied,
 )
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.filters import DepartmentFilter
 from horilla_core.models import Department
 from horilla_generics.views import (

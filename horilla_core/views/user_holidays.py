@@ -9,11 +9,10 @@ from functools import cached_property
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 
 # First-party / Horilla imports
-from horilla.decorator import htmx_required
+from horilla.utils.decorators import htmx_required, method_decorator
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.filters import HolidayFilter
 from horilla_core.models import Holiday
 from horilla_generics.views import (
