@@ -13,13 +13,14 @@ from django.http import HttpResponse
 from django.utils.functional import cached_property
 from django.views.generic import TemplateView
 
+from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.shortcuts import get_object_or_404, redirect, render
+
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
-from horilla.http import HttpNotFound, HorillaRefreshResponse
-from horilla.shortcuts import redirect, render, get_object_or_404
 from horilla.utils.decorators import (
-    method_decorator,
     htmx_required,
+    method_decorator,
     permission_required,
     permission_required_or_denied,
 )
@@ -30,13 +31,6 @@ from horilla_dashboard.models import (
     DashboardComponent,
     DefaultHomeLayoutOrder,
 )
-from horilla_dashboard.views.dashboard_helper import (
-    get_chart_data,
-    get_kpi_data,
-    get_table_data,
-)
-from horilla_generics.mixins import RecentlyViewedMixin
-from horilla_generics.views import HorillaListView, HorillaNavView
 
 # Local imports
 from horilla_dashboard.utils import (
@@ -44,6 +38,13 @@ from horilla_dashboard.utils import (
     validate_custom_date_params,
     validate_date_range_request,
 )
+from horilla_dashboard.views.dashboard_helper import (
+    get_chart_data,
+    get_kpi_data,
+    get_table_data,
+)
+from horilla_generics.mixins import RecentlyViewedMixin
+from horilla_generics.views import HorillaListView, HorillaNavView
 
 logger = logging.getLogger(__name__)
 

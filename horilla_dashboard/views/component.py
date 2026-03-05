@@ -15,11 +15,11 @@ from django.views.generic import View
 
 # First-party / Horilla imports
 from horilla.apps import apps
+from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
-from horilla.shortcuts import render, get_object_or_404
 from horilla.utils.decorators import (
-    method_decorator,
     htmx_required,
+    method_decorator,
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
@@ -31,6 +31,9 @@ from horilla_dashboard.models import (
     DashboardComponent,
     DefaultHomeLayoutOrder,
 )
+
+# Local imports
+from horilla_dashboard.utils import DATE_RANGE_CHOICES, apply_date_range_to_queryset
 from horilla_dashboard.views.dashboard_helper import apply_conditions, get_table_data
 from horilla_generics.views import (
     HorillaListView,
@@ -39,13 +42,6 @@ from horilla_generics.views import (
 )
 from horilla_reports.models import Report
 from horilla_utils.middlewares import _thread_local
-
-# Local imports
-from horilla_dashboard.utils import (
-    DATE_RANGE_CHOICES,
-    apply_date_range_to_queryset,
-)
-
 
 logger = logging.getLogger(__name__)
 

@@ -13,12 +13,12 @@ from django.db.models import Count
 from horilla.apps import apps
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_dashboard.views.helper import get_queryset_for_module
-from horilla_generics.views import HorillaListView
-from horilla_utils.methods import get_section_info_for_model
 
 # Local imports
 from horilla_dashboard.utils import DATE_RANGE_CHOICES, apply_date_range_to_queryset
+from horilla_dashboard.views.helper import get_queryset_for_module
+from horilla_generics.views import HorillaListView
+from horilla_utils.methods import get_section_info_for_model
 
 logger = logging.getLogger(__name__)
 

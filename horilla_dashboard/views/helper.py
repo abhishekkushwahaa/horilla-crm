@@ -6,7 +6,6 @@ import logging
 # Third-party imports (Django)
 from django.db.models import Q
 
-
 logger = logging.getLogger(__name__)
 
 

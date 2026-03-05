@@ -5,8 +5,10 @@ This module provides helpers to build unique, namespaced storage paths for
 uploaded files (e.g. app_label/model_name/field_name/slug-uuid.ext) to avoid
 collisions and keep uploads organized by app, model, and field.
 """
-from django.utils.text import slugify
+
 from uuid import uuid4
+
+from django.utils.text import slugify
 
 
 def upload_path(instance, filename):

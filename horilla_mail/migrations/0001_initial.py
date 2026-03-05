@@ -2,7 +2,7 @@
 
 import django.db.models.deletion
 import django.utils.timezone
-import horilla_core.models
+import horilla.utils.upload
 import horilla_mail.fields
 import horilla_mail.methods
 from django.conf import settings
@@ -170,7 +170,7 @@ class Migration(migrations.Migration):
                         default=django.utils.timezone.now, verbose_name="Updated At"
                     ),
                 ),
-                ("file", models.FileField(upload_to=horilla_core.models.upload_path)),
+                ("file", models.FileField(upload_to=horilla.utils.upload.upload_path)),
                 ("file_size", models.PositiveIntegerField(blank=True, null=True)),
                 ("mime_type", models.CharField(blank=True, max_length=100, null=True)),
                 ("is_inline", models.BooleanField(default=False)),

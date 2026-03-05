@@ -15,7 +15,6 @@ from django.views.generic import TemplateView, View
 from horilla.shortcuts import redirect
 from horilla.utils.translation import gettext_lazy as _
 from horilla_dashboard.models import Dashboard, DefaultHomeLayoutOrder
-from horilla_dashboard.views import DashboardDetailView
 
 # Local imports
 from horilla_dashboard.utils import (
@@ -24,7 +23,7 @@ from horilla_dashboard.utils import (
     validate_custom_date_params,
     validate_date_range_request,
 )
-
+from horilla_dashboard.views import DashboardDetailView
 
 logger = logging.getLogger(__name__)
 

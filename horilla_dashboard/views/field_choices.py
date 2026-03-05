@@ -12,13 +12,12 @@ from horilla.apps import apps
 from horilla.shortcuts import render
 from horilla.utils.choices import DISPLAYABLE_FIELD_TYPES
 from horilla.utils.decorators import (
-    method_decorator,
     htmx_required,
+    method_decorator,
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import HorillaContentType
-
 
 logger = logging.getLogger(__name__)
 

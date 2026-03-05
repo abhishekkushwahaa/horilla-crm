@@ -16,7 +16,6 @@ from horilla_dashboard.filters import DashboardFilter
 from horilla_dashboard.models import Dashboard, DashboardFolder
 from horilla_generics.views import HorillaListView
 
-
 logger = logging.getLogger(__name__)
 
 

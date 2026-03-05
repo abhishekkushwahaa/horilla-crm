@@ -3,7 +3,7 @@
 import django.core.validators
 import django.db.models.deletion
 import django.utils.timezone
-import horilla_core.models
+import horilla.utils.upload
 import horilla_dashboard.methods
 from django.conf import settings
 from django.db import migrations, models
@@ -247,7 +247,7 @@ class Migration(migrations.Migration):
                     models.ImageField(
                         blank=True,
                         null=True,
-                        upload_to=horilla_core.models.upload_path,
+                        upload_to=horilla.utils.upload.upload_path,
                         verbose_name="KPI Icon",
                     ),
                 ),

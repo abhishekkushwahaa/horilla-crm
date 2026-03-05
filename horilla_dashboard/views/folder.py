@@ -11,13 +11,14 @@ from django.http import HttpResponse, QueryDict
 from django.utils.functional import cached_property
 from django.views.generic import View
 
+from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.shortcuts import get_object_or_404, render
+
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
-from horilla.http import HttpNotFound, HorillaRefreshResponse
-from horilla.shortcuts import render, get_object_or_404
 from horilla.utils.decorators import (
-    method_decorator,
     htmx_required,
+    method_decorator,
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
@@ -27,7 +28,6 @@ from horilla_generics.views import (
     HorillaSingleDeleteView,
     HorillaSingleFormView,
 )
-
 
 logger = logging.getLogger(__name__)
 
