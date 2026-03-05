@@ -4,8 +4,7 @@ This module defines the core models for the Horilla CRM application
 
 # Third-party imports
 import logging
-from django_countries.fields import CountryField
-from djmoney.settings import CURRENCY_CHOICES
+
 from auditlog.models import AuditlogHistoryField, LogEntry
 
 # Django imports
@@ -16,18 +15,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
+from django_countries.fields import CountryField
+from djmoney.settings import CURRENCY_CHOICES
 
 # First-party / Horilla imports
 from horilla.apps import apps
-from horilla.urls import reverse_lazy
 from horilla.registry.permission_registry import permission_exempt_model
-from horilla.utils.translation import gettext_lazy as _
+from horilla.urls import reverse_lazy
 from horilla.utils.choices import (
     DATE_FORMAT_CHOICES,
     DATETIME_FORMAT_CHOICES,
     TIME_FORMAT_CHOICES,
     TIMEZONE_CHOICES,
 )
+from horilla.utils.translation import gettext_lazy as _
 from horilla.utils.upload import upload_path
 from horilla_utils.middlewares import _thread_local
 

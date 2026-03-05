@@ -13,10 +13,10 @@ from django.utils.html import format_html
 # First-party / Horilla imports
 from horilla.apps import apps
 from horilla.urls import reverse_lazy
-from horilla.utils.translation import gettext_lazy as _
 from horilla.utils.choices import DAY_CHOICES
-from horilla_utils.methods import render_template
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import HorillaCoreModel
+from horilla_utils.methods import render_template
 
 logger = logging.getLogger(__name__)
 

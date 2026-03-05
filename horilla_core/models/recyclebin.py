@@ -15,8 +15,8 @@ from django.utils import timezone
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_utils.middlewares import _thread_local
 from horilla_core.models import Company, CompanyFilteredManager
+from horilla_utils.middlewares import _thread_local
 
 
 class RecycleBin(models.Model):

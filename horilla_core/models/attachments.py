@@ -1,5 +1,5 @@
 """
-This module defines the HorillaAttachment model, 
+This module defines the HorillaAttachment model,
 """
 
 # Standard library imports

@@ -2,9 +2,10 @@
 This module defines the ListColumnVisibility and DetailFieldVisibility models for managing user preferences.
 """
 
+from django.conf import settings
+
 # Django imports
 from django.db import models
-from django.conf import settings
 
 # First-party / Horilla imports
 from horilla.registry.permission_registry import permission_exempt_model

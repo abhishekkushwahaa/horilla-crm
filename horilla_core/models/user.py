@@ -6,25 +6,21 @@ It also includes related models for managing field-level permissions and company
 # Standard library imports
 from collections.abc import Iterable
 
-# Third-party imports
-from django_countries.fields import CountryField
-
 # Django imports
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import (
-    AbstractUser,
-    UserManager,
-)
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
 
+# Third-party imports
+from django_countries.fields import CountryField
+
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
-from horilla.utils.translation import gettext_lazy as _
 from horilla.utils.choices import (
     DATE_FORMAT_CHOICES,
     DATETIME_FORMAT_CHOICES,
@@ -32,9 +28,10 @@ from horilla.utils.choices import (
     TIME_FORMAT_CHOICES,
     TIMEZONE_CHOICES,
 )
+from horilla.utils.translation import gettext_lazy as _
 from horilla.utils.upload import upload_path
+from horilla_core.models import Company, Department, MultipleCurrency, Role
 from horilla_utils.methods import render_template
-from horilla_core.models import Company, Role, Department, MultipleCurrency
 
 
 class HorillaUser(AbstractUser):

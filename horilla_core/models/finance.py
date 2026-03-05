@@ -2,28 +2,24 @@
 This module defines the financial models for the Horilla CRM application
 """
 
-
 # Standard library imports
-from datetime import date, datetime,timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from datetime import date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
 # Third-party imports
 from dateutil.relativedelta import relativedelta
-from djmoney.settings import CURRENCY_CHOICES
 
 # Django imports
 from django.db import models
+from djmoney.settings import CURRENCY_CHOICES
 
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
+from horilla.utils.choices import CURRENCY_FORMAT_CHOICES, DAY_CHOICES, MONTH_CHOICES
 from horilla.utils.translation import gettext_lazy as _
-from horilla.utils.choices import (
-    CURRENCY_FORMAT_CHOICES,
-    DAY_CHOICES,
-    MONTH_CHOICES
-)
+from horilla_core.models import Company, HorillaCoreModel
 from horilla_utils.methods import render_template
-from horilla_core.models import HorillaCoreModel, Company
+
 
 class MultipleCurrency(HorillaCoreModel):
     """
@@ -282,7 +278,6 @@ class MultipleCurrency(HorillaCoreModel):
         This method to get edit url
         """
         return reverse_lazy("horilla_core:delete_currency", kwargs={"pk": self.pk})
-    
 
 
 class DatedConversionRate(HorillaCoreModel):
@@ -866,5 +861,3 @@ class Period(HorillaCoreModel):
 
         verbose_name = _("Period")
         verbose_name_plural = _("Periods")
-
-
