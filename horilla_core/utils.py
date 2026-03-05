@@ -3,22 +3,62 @@
 # Standard library imports
 import json
 import logging
+from decimal import Decimal
 
 # Third-party imports
+import requests
 from dateutil.parser import parse
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, transaction
 from django.db.models import QuerySet
 
 # First-party / Horilla imports
+from horilla.apps import apps
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
 from horilla_core.models import FieldPermission, MultipleCurrency, RecycleBin
 from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
+
+
+def fetch_exchange_rate_from_api(base_currency, target_currency):
+    """
+    Fetch exchange rate from Frankfurter API (free, no API key required).
+    Falls back to open.er-api.com if Frankfurter fails.
+
+    Args:
+        base_currency: The base currency code (e.g., 'USD')
+        target_currency: The target currency code (e.g., 'INR')
+
+    Returns:
+        Decimal: The exchange rate, or None if fetch fails
+    """
+    try:
+        url = f"https://api.frankfurter.app/latest?from={base_currency}&to={target_currency}"
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            rate = data.get("rates", {}).get(target_currency)
+            if rate:
+                return Decimal(str(rate)).quantize(Decimal("0.0001"))
+    except Exception as e:
+        logger.warning("Frankfurter API failed: %s", e)
+
+    try:
+        url = f"https://open.er-api.com/v6/latest/{base_currency}"
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("result") == "success":
+                rate = data.get("rates", {}).get(target_currency)
+                if rate:
+                    return Decimal(str(rate)).quantize(Decimal("0.0001"))
+    except Exception as e:
+        logger.warning("Fallback exchange rate API failed: %s", e)
+
+    return None
 
 
 def restore_recycle_bin_records(request, recycle_objs):

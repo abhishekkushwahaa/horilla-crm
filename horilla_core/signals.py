@@ -2,29 +2,28 @@
 This module contains signal handlers and utility functions for Horilla's core
 models such as Company, FiscalYear, MultipleCurrency, and related
 models.
-
-Features implemented in this module include:
-- Automatic fiscal year configuration when a company is created or updated.
-- Default currency initialization and handling of multi-currency configurations.
-- Custom permission creation during migrations.
-- Helper utilities to dynamically discover models and build filter queries.
-
 """
 
+# Standard library imports
 import logging
 from decimal import Decimal
 
-from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
-from django.db.models.signals import post_delete, post_migrate, post_save
+
+# Third-party imports (Django)
+from django.db.models.signals import post_delete, post_migrate, post_save, pre_save
 from django.dispatch import Signal, receiver
+from django.utils import timezone
 from django.utils.encoding import force_str
 
+# First-party / Horilla imports
+from horilla.apps import apps
+from horilla.auth.models import User
 from horilla_core.models import (
     Company,
     DetailFieldVisibility,
@@ -35,7 +34,8 @@ from horilla_core.models import (
     Role,
 )
 from horilla_core.services.fiscal_year_service import FiscalYearService
-from horilla_core.utils import get_user_field_permission
+from horilla_core.utils import fetch_exchange_rate_from_api, get_user_field_permission
+from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,100 @@ company_currency_changed = Signal()
 company_created = Signal()
 pre_logout_signal = Signal()
 pre_login_render_signal = Signal()
+
+
+def handle_company_currency_change(company, old_currency):
+    """
+    Handle currency change with optimized bulk updates and correct conversion logic.
+    Kept in signals so Company model does not need to import MultipleCurrency.
+    Updates conversion rates for all non-default currencies using the same API
+    as the add-currency form; falls back to ratio math if fetch fails.
+    """
+    request = getattr(_thread_local, "request", None)
+    try:
+        with transaction.atomic():
+            old_default = MultipleCurrency.all_objects.filter(
+                company=company, currency=old_currency
+            ).first()
+
+            new_default_currency = MultipleCurrency.all_objects.filter(
+                company=company, currency=company.currency
+            ).first()
+
+            if not new_default_currency:
+                new_default_currency = MultipleCurrency.all_objects.create(
+                    company=company,
+                    currency=company.currency,
+                    is_default=True,
+                    conversion_rate=Decimal("1.00"),
+                    decimal_places=2,
+                    format="western_format",
+                    created_at=timezone.now(),
+                    updated_at=timezone.now(),
+                    created_by=request.user if request else None,
+                    updated_by=request.user if request else None,
+                )
+
+            original_new_default_rate = new_default_currency.conversion_rate or Decimal(
+                "1.0"
+            )
+            MultipleCurrency.all_objects.filter(company=company).update(
+                is_default=False
+            )
+            new_default_currency.is_default = True
+            new_default_currency.conversion_rate = Decimal("1.00")
+            new_default_currency.save()
+
+            base_code = new_default_currency.currency
+            other_currencies = MultipleCurrency.all_objects.filter(
+                company=company
+            ).exclude(pk=new_default_currency.pk)
+            for curr in other_currencies:
+                rate = fetch_exchange_rate_from_api(base_code, curr.currency)
+                if rate is not None:
+                    curr.conversion_rate = rate
+                else:
+                    current_rate = curr.conversion_rate or Decimal("1.0")
+                    curr.conversion_rate = current_rate / original_new_default_rate
+                curr.save()
+
+            old_rate = old_default.conversion_rate if old_default else Decimal("1.0")
+            conversion_rate = Decimal("1.0") / old_rate
+            company_currency_changed.send(
+                sender=Company, company=company, conversion_rate=conversion_rate
+            )
+    except Exception as e:
+        logger.error(
+            "Error handling currency change for company %s: %s",
+            company.id,
+            e,
+        )
+        raise
+
+
+@receiver(pre_save, sender=Company)
+def _mark_company_currency_change_pending(sender, instance, **kwargs):
+    """
+    On update, if currency changed, store old currency so post_save can run
+    handle_company_currency_change without Company importing from signals.
+    """
+    if instance.pk and instance.currency is not None:
+        old = getattr(instance, "_original_currency", None)
+        if old is not None and old != instance.currency:
+            instance._pending_currency_change = old
+
+
+@receiver(post_save, sender=Company)
+def _handle_pending_company_currency_change(sender, instance, created, **kwargs):
+    """Run currency-change logic when currency was changed (no import in Company)."""
+    old = getattr(instance, "_pending_currency_change", None)
+    if created or old is None:
+        return
+    try:
+        handle_company_currency_change(instance, old)
+    finally:
+        if hasattr(instance, "_pending_currency_change"):
+            del instance._pending_currency_change
 
 
 @receiver(post_save, sender="horilla_core.Company")
@@ -57,7 +151,6 @@ def create_company_fiscal_config(sender, instance, created, **kwargs):
         except FiscalYear.DoesNotExist:
             config = FiscalYearService.get_or_create_company_configuration(instance)
 
-        # Generate fiscal years for this config
         FiscalYearService.generate_fiscal_years(config)
 
 
@@ -79,22 +172,20 @@ def create_default_currency(sender, instance, created, **kwargs):
     if created and instance.currency:
         try:
             with transaction.atomic():
-                if not MultipleCurrency.objects.filter(
+                if not MultipleCurrency.all_objects.filter(
                     company=instance, currency=instance.currency
                 ).exists():
-                    new_currency = MultipleCurrency.objects.create(
+                    new_currency = MultipleCurrency.all_objects.create(
                         company=instance,
                         currency=instance.currency,
                         is_default=True,
                         conversion_rate=Decimal("1.00"),
                         decimal_places=2,
                         format="western_format",
-                        created_at=instance.created_at,
-                        updated_at=instance.updated_at,
                         created_by=instance.created_by,
                         updated_by=instance.updated_by,
                     )
-                    all_currencies = MultipleCurrency.objects.filter(
+                    all_currencies = MultipleCurrency.all_objects.filter(
                         company=instance
                     ).exclude(pk=new_currency.pk)
                     if all_currencies.exists():
@@ -107,6 +198,86 @@ def create_default_currency(sender, instance, created, **kwargs):
                 instance.id,
                 e,
             )
+
+
+@receiver(post_save, sender=Company)
+def sync_default_currency_when_multiple_off(sender, instance, created, **kwargs):
+    """
+    When multiple currencies are OFF, keep the default MultipleCurrency in sync
+    with company.currency so that the default changes when the user changes
+    company currency (and when they turn multi-currency back on, default is correct).
+    """
+    if getattr(instance, "activate_multiple_currencies", False):
+        return
+    if not instance.currency:
+        return
+    try:
+        with transaction.atomic():
+            default_currency = MultipleCurrency.all_objects.filter(
+                company=instance, is_default=True
+            ).first()
+
+            matching = MultipleCurrency.all_objects.filter(
+                company=instance, currency=instance.currency
+            ).first()
+
+            if not matching:
+                request = getattr(_thread_local, "request", None)
+                matching = MultipleCurrency.all_objects.create(
+                    company=instance,
+                    currency=instance.currency,
+                    is_default=True,
+                    conversion_rate=Decimal("1.00"),
+                    decimal_places=2,
+                    format="western_format",
+                    created_by=request.user if request else None,
+                    updated_by=request.user if request else None,
+                )
+            else:
+                MultipleCurrency.all_objects.filter(company=instance).update(
+                    is_default=False
+                )
+                matching.is_default = True
+                matching.conversion_rate = Decimal("1.00")
+                matching.save()
+            MultipleCurrency.all_objects.filter(company=instance).exclude(
+                pk=matching.pk
+            ).delete()
+
+    except Exception as e:
+        logger.error(
+            "Error syncing default currency when multi-currency off for company %s: %s",
+            instance.pk,
+            e,
+        )
+
+
+@receiver(post_save, sender=Company)
+def sync_company_currency_to_default_multiple(sender, instance, created, **kwargs):
+    """
+    When multiple currencies are active, keep company.currency in sync with
+    the default MultipleCurrency. Runs after save so that default-currency
+    logic is handled via signals instead of inside Company.save().
+    """
+    if not getattr(instance, "activate_multiple_currencies", False):
+        return
+    default_currency = MultipleCurrency.all_objects.filter(
+        company=instance, is_default=True
+    ).first()
+    if not default_currency or default_currency.currency == instance.currency:
+        return
+    try:
+        old_currency = instance.currency
+        instance.currency = default_currency.currency
+        handle_company_currency_change(instance, old_currency)
+    except Exception as e:
+        logger.error(
+            "Error syncing company %s currency to default multiple: %s",
+            instance.pk,
+            e,
+        )
+        raise
+    Company.objects.filter(pk=instance.pk).update(currency=instance.currency)
 
 
 def add_custom_permissions(sender, **kwargs):
@@ -334,7 +505,6 @@ def clear_column_visibility_cache_on_permission_change(sender, instance, **kwarg
             app_label = content_type.app_label
             field_name = instance.field_name
 
-            # Get the model class - use model_name from content_type first, then get class name
             try:
                 model = content_type.model_class()
                 if not model:
@@ -342,9 +512,7 @@ def clear_column_visibility_cache_on_permission_change(sender, instance, **kwarg
                     model = apps.get_model(
                         app_label=app_label, model_name=content_type.model
                     )
-                model_name = (
-                    model.__name__
-                )  # Use class name (capitalized) as stored in ListColumnVisibility
+                model_name = model.__name__
             except (LookupError, AttributeError) as e:
                 logger.error(
                     "Model not found: %s.%s: %s",
@@ -354,39 +522,28 @@ def clear_column_visibility_cache_on_permission_change(sender, instance, **kwarg
                 )
                 return
 
-            # Determine affected users
             affected_users = []
             if instance.user:
                 affected_users = [instance.user]
             elif instance.role_id and instance.role and instance.role.pk:
-                # Only access role.users when the Role is persisted (has pk);
-                # unsaved Role instances raise "needs to have a primary key value
-                # before this relationship can be used" when accessing .users
                 affected_users = list(instance.role.users.all())
 
-            # Get the permission type (if it's a save, check the new permission; if delete, field is now visible)
             _permission_type = None
             if hasattr(instance, "permission_type"):
                 _permission_type = instance.permission_type
 
-            # Process each affected user
             for user in affected_users:
-                # Get all ListColumnVisibility entries for this user and model
-                # Try both model_name formats (class name and lowercase) to be safe
                 visibility_entries = ListColumnVisibility.all_objects.filter(
                     user=user, app_label=app_label
                 ).filter(Q(model_name=model_name) | Q(model_name=model_name.lower()))
                 for entry in visibility_entries:
                     updated = False
 
-                    # Check current permission for this user and field
                     current_permission = get_user_field_permission(
                         user, model, field_name
                     )
 
-                    # If field is now hidden, remove it from visible_fields and removed_custom_fields
                     if current_permission == "hidden":
-                        # Remove from visible_fields
                         original_visible_fields = (
                             entry.visible_fields.copy() if entry.visible_fields else []
                         )
@@ -402,8 +559,6 @@ def clear_column_visibility_cache_on_permission_change(sender, instance, **kwarg
                             else:
                                 item_field_name = field_item
 
-                            # Check if this field matches the hidden field
-                            # Handle both direct field name and display method (get_*_display)
                             field_matches = (
                                 item_field_name == field_name
                                 or item_field_name == f"get_{field_name}_display"
@@ -458,7 +613,6 @@ def clear_column_visibility_cache_on_permission_change(sender, instance, **kwarg
                             else:
                                 updated = True
 
-                        # Update the entry if changes were made
                         if updated:
                             entry.visible_fields = updated_visible_fields
                             entry.removed_custom_fields = updated_removed_fields
@@ -469,12 +623,8 @@ def clear_column_visibility_cache_on_permission_change(sender, instance, **kwarg
                                 ]
                             )
 
-                    # If field is now visible (not hidden), only remove from removed_custom_fields if present.
-                    # Do NOT add to visible_fields - that causes all model fields to be added when bulk
-                    # permission save triggers the signal for every field. Only remove columns when hidden.
                     elif current_permission != "hidden":
                         try:
-                            # Remove from removed_custom_fields if it's there
                             original_removed_fields = (
                                 entry.removed_custom_fields.copy()
                                 if entry.removed_custom_fields
@@ -572,11 +722,8 @@ def clear_column_visibility_cache_on_permission_change(sender, instance, **kwarg
                                 update_fields=["header_fields", "details_fields"]
                             )
 
-                # When field becomes visible again, re-add to DetailFieldVisibility
-                # so it shows in the detail column visibility "Add field" lists
                 elif current_permission != "hidden":
                     try:
-                        # Get excluded fields from detail view (must not add excluded columns)
                         details_excluded = set()
                         try:
                             from horilla_generics.views import HorillaDetailView
@@ -769,16 +916,13 @@ def clear_list_column_cache_for_model(content_type, affected_users=None):
         if not model_name:
             return
 
-        # Get all ListColumnVisibility records for this model
         visibility_queryset = ListColumnVisibility.all_objects.filter(
             app_label=app_label, model_name=model_name
         )
 
-        # If specific users are provided, filter to those users
         if affected_users:
             visibility_queryset = visibility_queryset.filter(user_id__in=affected_users)
 
-        # Clear cache for each visibility record
         for visibility in visibility_queryset:
             cache_key = f"visible_columns_{visibility.user.id}_{app_label}_{model_name}_{visibility.context}_{visibility.url_name}"
             cache.delete(cache_key)
