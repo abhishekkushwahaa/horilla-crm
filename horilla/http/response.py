@@ -9,6 +9,50 @@ from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
 
 from horilla.http import safe_url
+from horilla.shortcuts import render
+from horilla.utils.translation import gettext_lazy as _
+
+
+class HttpNotFound(Exception):
+    """Custom 404 exception that renders a Horilla-specific error template."""
+
+    def __init__(
+        self,
+        message=_(
+            "The page you are looking for does not exist or may have been moved."
+        ),
+        context=None,
+        template=None,
+    ):
+        """
+        Initialize the HttpNotFound exception.
+
+        Args:
+            message (str): The error message to display.
+            context (dict, optional): Additional context variables for the template.
+            template (str, optional): Path to the error template.
+        """
+        self.message = message
+        self.context = context or {}
+        self.template = template or "error/404.html"
+        super().__init__(message)
+
+    def as_response(self, request):
+        """
+        Render the exception as an HTTP 404 response.
+
+        Args:
+            request (HttpRequest): The request that triggered the exception.
+
+        Returns:
+            HttpResponse: A rendered 404 response.
+        """
+        return render(
+            request,
+            self.template,
+            {**self.context, "error_message": self.message},
+            status=404,
+        )
 
 
 class HorillaRedirectResponse(HttpResponseRedirect):
