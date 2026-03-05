@@ -6,7 +6,6 @@ import tempfile
 from pathlib import Path
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.core.management import call_command
@@ -15,10 +14,10 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views import View
 
+# First-party / Horilla imports
+from horilla.apps import apps
 from horilla.auth.models import User
 from horilla.http import safe_url
-
-# First-party / Horilla imports
 from horilla.shortcuts import redirect, render
 from horilla.utils.translation import gettext_lazy as _
 

@@ -10,16 +10,15 @@ import inspect
 import logging
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import CharField, Q, TextField
 from django.http import JsonResponse
 from django.views import View
 
-from horilla.exceptions import HorillaHttp404
-
 # First-party (Horilla)
+from horilla.apps import apps
+from horilla.http import HttpNotFound
 from horilla.shortcuts import render
 from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.methods import get_dynamic_form_for_model
@@ -66,7 +65,7 @@ class HorillaSelect2DataView(LoginRequiredMixin, View):
         try:
             model = apps.get_model(app_label=app_label, model_name=model_name)
         except LookupError as e:
-            raise HorillaHttp404(e)
+            raise HttpNotFound(e)
 
         search_term = request.GET.get("q", "").strip()
         ids = request.GET.get("ids", "").strip()

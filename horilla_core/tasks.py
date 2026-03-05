@@ -19,7 +19,6 @@ from io import BytesIO
 from celery import shared_task
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.core.mail import get_connection
 from django.db import models
 from django.utils import timezone
@@ -30,6 +29,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 # First-party / Horilla imports
+from horilla.apps import apps
 from horilla.utils.translation import gettext as _
 
 # First-party / Horilla core imports

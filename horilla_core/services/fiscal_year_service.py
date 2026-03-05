@@ -15,11 +15,11 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.db import transaction
 from django.utils import timezone
 
-# Local application imports
+# First-party / Horilla imports
+from horilla.apps import apps
 from horilla_core.models import FiscalYear
 
 

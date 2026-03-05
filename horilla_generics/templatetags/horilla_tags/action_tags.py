@@ -2,7 +2,7 @@
 
 import logging
 
-from django.apps import apps
+from horilla.apps import apps
 
 from ._registry import register
 

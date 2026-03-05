@@ -8,7 +8,6 @@ from typing import Any
 
 # Django / third-party imports
 from django import forms
-from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
@@ -18,9 +17,9 @@ from django.template.loader import render_to_string
 from django.utils.html import escapejs
 from django.views.generic import DetailView, FormView, TemplateView
 
-from horilla.http import HorillaRefreshResponse
-
 # First-party (Horilla)
+from horilla.apps import apps
+from horilla.http import HorillaRefreshResponse
 from horilla.shortcuts import render
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _

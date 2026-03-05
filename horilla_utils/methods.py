@@ -13,7 +13,6 @@ import re
 from django import template
 
 # Django / third-party imports
-from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.middleware.csrf import get_token
 from django.template import loader
@@ -22,8 +21,10 @@ from django.utils.functional import lazy
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 
-# First-party (Horilla) imports
 from horilla import settings
+
+# First-party (Horilla) imports
+from horilla.apps import apps
 from horilla.menu.sub_section_menu import sub_section_menu as menu_registry
 from horilla_utils.middlewares import _thread_local
 

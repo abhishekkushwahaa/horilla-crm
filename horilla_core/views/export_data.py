@@ -12,10 +12,10 @@ from datetime import date, datetime
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
-# Django imports (third-party)
-from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+
+# Django imports (third-party)
 from django.db.models import ForeignKey
 from django.db.models.fields.related import ManyToManyField
 from django.http import HttpResponse
@@ -30,9 +30,9 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-from horilla.registry.feature import FEATURE_REGISTRY
-
 # First-party (Horilla)
+from horilla.apps import apps
+from horilla.registry.feature import FEATURE_REGISTRY
 from horilla.shortcuts import render
 from horilla.utils.decorators import (
     htmx_required,

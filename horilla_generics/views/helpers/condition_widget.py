@@ -8,7 +8,6 @@ HTMX views for dynamic condition rows and field-value widgets in filter/automati
 import logging
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models
 from django.http import HttpResponse
@@ -19,6 +18,7 @@ from django.utils.safestring import mark_safe
 from django.views import View
 
 # First-party (Horilla)
+from horilla.apps import apps
 from horilla.shortcuts import render
 from horilla.utils.choices import FIELD_TYPE_MAP
 from horilla.utils.decorators import htmx_required, method_decorator

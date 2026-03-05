@@ -9,11 +9,9 @@ import re
 from datetime import datetime
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.http import HttpResponse, JsonResponse
 from django.template import Context, Template
@@ -22,9 +20,10 @@ from django.utils.html import format_html
 from django.views import View
 from django.views.generic import TemplateView
 
-from horilla.http.response import HorillaRedirectResponse
-
-# First-party / Horilla imports
+# First-party (Horilla)
+from horilla.apps import apps
+from horilla.core.exceptions import ValidationError
+from horilla.http import HorillaRedirectResponse
 from horilla.shortcuts import render
 from horilla.utils.decorators import (
     htmx_required,
@@ -32,6 +31,8 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext as _
+
+# First-party / Horilla apps
 from horilla_core.methods import get_template_reverse_models
 from horilla_generics.views import HorillaSingleDeleteView
 from horilla_mail.models import (

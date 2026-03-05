@@ -7,7 +7,6 @@ import functools
 import logging
 import re
 
-from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.fields import GenericRelation
@@ -18,9 +17,9 @@ from django.template.loader import render_to_string
 # Django / third-party imports
 from django.views.generic import DetailView
 
-from horilla.exceptions import HorillaHttp404
-
 # First-party (Horilla)
+from horilla.apps import apps
+from horilla.http import HttpNotFound
 from horilla.shortcuts import render
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
@@ -571,7 +570,7 @@ class HorillaRelatedListContentView(LoginRequiredMixin, DetailView):
         """Dynamically resolve the model and app_label from model_name query parameter."""
         model_name = self.request.GET.get("model_name")
         if not model_name:
-            raise HorillaHttp404("model_name parameter is required")
+            raise HttpNotFound("model_name parameter is required")
         try:
             content_type = ContentType.objects.get(model=model_name.lower())
             app_label = content_type.app_label
@@ -579,7 +578,7 @@ class HorillaRelatedListContentView(LoginRequiredMixin, DetailView):
             return model.objects.all()
         except Exception as e:
             messages.error(self.request, e)
-            raise HorillaHttp404(e)
+            raise HttpNotFound(e)
 
     def get(self, request, *args, **kwargs):
         """Load and render related list content for the given field_name."""

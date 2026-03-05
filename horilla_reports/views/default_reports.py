@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 
 # Django / third-party imports
-from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
@@ -13,9 +12,8 @@ from django.http import HttpResponse
 from django.views.generic import TemplateView, View
 
 # First-party (Horilla) imports
+from horilla.apps import apps
 from horilla.utils.decorators import htmx_required, method_decorator
-
-# Local application imports
 from horilla_reports.models import Report, ReportFolder
 
 

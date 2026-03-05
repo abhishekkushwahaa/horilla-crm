@@ -10,7 +10,6 @@ from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
 # Third-party imports (Django)
-from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models
@@ -20,6 +19,7 @@ from django.utils import timezone
 from django.views import View
 
 # First-party (Horilla)
+from horilla.apps import apps
 from horilla.shortcuts import get_object_or_404, render
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
