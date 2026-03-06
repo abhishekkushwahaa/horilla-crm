@@ -15,7 +15,7 @@ from horilla_crm.accounts.views.core import (
     AccountHierarchyView,
     AccountsNotesAndAttachments,
 )
-from horilla_crm.accounts.views.account_form import (
+from horilla_crm.accounts.views.actions import (
     AccountFormView,
     AccountsSingleFormView,
     AccountChangeOwnerForm,
