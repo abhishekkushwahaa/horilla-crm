@@ -57,15 +57,3 @@ def create_notification(
         return notification
     except Exception:
         return None
-
-
-def limit_content_types():
-    """
-    Limit ContentType choices to only models that have
-    'mail_template_includable = True'.
-    """
-    includable_models = []
-    for model in FEATURE_REGISTRY["notification_template_models"]:
-        includable_models.append(model._meta.model_name.lower())
-
-    return models.Q(model__in=includable_models)

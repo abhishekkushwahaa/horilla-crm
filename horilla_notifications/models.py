@@ -5,22 +5,19 @@ model for horilla notifications
 from django.conf import settings
 
 # Third party imports (Django)
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
 
 from horilla.core.exceptions import ValidationError
 
 # First-party (Horilla)
+from horilla.db import models
+from horilla.registry.limiters import limit_content_types
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
 
 # First-party / Horilla apps
 from horilla_core.models import HorillaContentType, HorillaCoreModel
 from horilla_utils.methods import has_xss
-
-# Local / relative imports
-from .methods import limit_content_types
 
 
 class Notification(models.Model):
@@ -55,7 +52,7 @@ class Notification(models.Model):
         related_name="notification_related_objects",
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
-    related_object = GenericForeignKey("content_type", "object_id")
+    related_object = models.GenericForeignKey("content_type", "object_id")
 
     def __str__(self):
         return f"Notification for {self.user.username}: {self.message}"
@@ -104,7 +101,7 @@ class NotificationTemplate(HorillaCoreModel):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        limit_choices_to=limit_content_types,
+        limit_choices_to=limit_content_types("notification_template_models"),
         verbose_name=_("Related Model"),
     )
 
