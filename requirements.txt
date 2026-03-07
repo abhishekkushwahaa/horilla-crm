@@ -22,7 +22,7 @@ cron_descriptor==2.0.6
 cryptography==46.0.5
 daphne==4.2.1
 dj-user-login-history==1.0.6
-Django==6.0.2
+Django==6.0.3
 django-auditlog==3.4.0
 django-colorfield==0.14.0
 django-countries==8.2.0
