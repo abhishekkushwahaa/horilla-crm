@@ -13,8 +13,13 @@ services:
       - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
       - CSRF_TRUSTED_ORIGINS=http://localhost:8000
       - DATABASE_URL=postgres://horilla_user:horilla_pass@db:5432/horilla_db
+      # Avoid writing .init_password into mounted volume (permission issues in CI/containers)
+      - DB_INIT_PASSWORD=ci-dev-init-password-change-in-production
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - db
+      - redis
 
   db:
     image: postgres:16-alpine
@@ -26,6 +31,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
 
   nginx:
     image: nginx:alpine
