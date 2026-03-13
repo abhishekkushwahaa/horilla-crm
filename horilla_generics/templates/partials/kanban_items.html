@@ -43,30 +43,38 @@
                 <img src="https://ui-avatars.com/api/?name={{item.display_columns.0.value|urlencode}}&background=ffccbc&color=e54f38" alt="{% trans 'Avatar' %}" class="rounded-full w-10 h-10 object-cover" loading="lazy" />
             </div>
 
-            <div class="flex-1">
+            <div class="flex-1 min-w-0 overflow-visible">
                 {% if item.display_columns %}
                     {% if kanban_attrs.permission or kanban_attrs.own_permission %}
                         {# Wrap kanban_attrs in list and check permissions #}
                         {% filter_actions_by_permission kanban_attrs|wrap_in_list item as allowed_kanban_attrs %}
 
                         {% if allowed_kanban_attrs %}
-                            <p class="mb-1 hover:text-primary-600" style="cursor:pointer"
+                            <p class="mb-1 hover:text-primary-600 overflow-visible" style="cursor:pointer"
                                 {% for attr_name, attr_value in kanban_attrs.items %}
                                     {% if attr_name != 'class' and attr_name != 'style' and attr_name != 'permission' and attr_name != 'own_permission' and attr_name != 'owner_field' and attr_name != 'owner_method' %}
                                         {{ attr_name }}="{{ attr_value|format:item|safe }}"
                                     {% endif %}
                                 {% endfor %}
                             >
-                                {{ item.display_columns.0.value|default:"N/A" }}
+                                {% if item.display_columns.0.value|default:"N/A"|length > 20 %}
+                                    <span class="truncate block max-w-full" title="{{ item.display_columns.0.value|default:'N/A'|escape }}">{{ item.display_columns.0.value|default:"N/A"|truncatechars:20|escape }}</span>
+                                {% else %}
+                                    {{ item.display_columns.0.value|default:"N/A"|escape }}
+                                {% endif %}
                             </p>
                         {% else %}
-                            <p class="mb-1">
-                                {{ item.display_columns.0.value|default:"N/A" }}
+                            <p class="mb-1 overflow-visible">
+                                {% if item.display_columns.0.value|default:"N/A"|length > 20 %}
+                                    <span class="truncate block max-w-full" title="{{ item.display_columns.0.value|default:'N/A'|escape }}">{{ item.display_columns.0.value|default:"N/A"|truncatechars:20|escape }}</span>
+                                {% else %}
+                                    {{ item.display_columns.0.value|default:"N/A"|escape }}
+                                {% endif %}
                             </p>
                         {% endif %}
                 {% else %}
                         {# No permission check - render normally (string attrs) #}
-                        <p class="mb-1 {% if kanban_attrs %} hover:text-primary-600 {% endif %}"
+                        <p class="mb-1 overflow-visible {% if kanban_attrs %} hover:text-primary-600 {% endif %}"
                             {% if kanban_attrs %}
                                 style="cursor:pointer"
                                 {% for attr_name, attr_value in kanban_attrs.items %}
@@ -76,20 +84,37 @@
                                 {% endfor %}
                             {% endif %}
                             >
-                                {{ item.display_columns.0.value|default:"N/A" }}
+                                {% if item.display_columns.0.value|default:"N/A"|length > 20 %}
+                                    <span class="truncate block max-w-full" title="{{ item.display_columns.0.value|default:'N/A'|escape }}">{{ item.display_columns.0.value|default:"N/A"|truncatechars:20|escape }}</span>
+                                {% else %}
+                                    {{ item.display_columns.0.value|default:"N/A"|escape }}
+                                {% endif %}
                         </p>
                 {% endif %}
                 {% if item.display_columns|length > 1 %}
-                    <p class="text-xs text-[#565E6C] mb-1">{{ item.display_columns.1.value|default:"N/A" }}</p>
+                    <p class="text-xs text-[#565E6C] mb-1 overflow-visible">
+                        {% if item.display_columns.1.value|default:"N/A"|length > 20 %}
+                            <span class="truncate block max-w-full" title="{{ item.display_columns.1.value|default:'N/A'|escape }}">{{ item.display_columns.1.value|default:"N/A"|truncatechars:20|escape }}</span>
+                        {% else %}
+                            {{ item.display_columns.1.value|default:"N/A"|escape }}
+                        {% endif %}
+                    </p>
                 {% endif %}
-                {% else %}
-                    <p class="mb-1">N/A</p>
-                {% endif %}
+            {% else %}
+                <p class="mb-1">N/A</p>
+            {% endif %}
             </div>
         </div>
 
         {% for column in item.display_columns|slice:"2:" %}
-            <p class="text-xs text-[#565E6C] mb-1">{{ column.label }}: {{ column.value|default:"N/A" }}</p>
+            <p class="text-xs text-[#565E6C] mb-1 flex gap-1 min-w-0 overflow-visible">
+                <span class="font-medium flex-shrink-0">{{ column.label }}:</span>
+                {% if column.value|default:"N/A"|length > 20 %}
+                    <span class="truncate block max-w-full min-w-0" title="{{ column.value|default:'N/A'|escape }}">{{ column.value|default:"N/A"|truncatechars:20|escape }}</span>
+                {% else %}
+                    <span class="min-w-0">{{ column.value|default:"N/A"|escape }}</span>
+                {% endif %}
+            </p>
         {% endfor %}
     </div>
 </div>
