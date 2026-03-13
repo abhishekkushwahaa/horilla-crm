@@ -125,7 +125,6 @@ def register_feature(
     Returns:
         bool: True if registered, False if already exists
     """
-    import inspect
 
     if registry_key is None:
         registry_key = f"{feature_name}_models"
@@ -134,7 +133,7 @@ def register_feature(
     if auto_register_all is None:
         # If include_models is provided, default to selective registration (False)
         # If include_models is NOT provided, default to True (auto-register all all=True models)
-        auto_register_all = False if include_models else True
+        auto_register_all = not include_models
 
     # Only apply exclude_app_label when explicitly passed; do not auto-detect for exclusion
     explicit_exclude_app = exclude_app_label is not _EXCLUDE_APP_NOT_PASSED
