@@ -5,11 +5,10 @@ import logging
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.views import View
 from django.views.generic import TemplateView
 
-# First-party (Horilla)
+# First-party / Horilla apps
 from horilla.apps import apps
 from horilla.shortcuts import render
 from horilla.utils.decorators import (
@@ -18,9 +17,8 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext as _
-
-# First-party / Horilla apps
 from horilla_core.methods import get_template_reverse_models
+from horilla_core.models import HorillaContentType
 from horilla_mail.models import HorillaMail
 
 logger = logging.getLogger(__name__)
@@ -313,11 +311,13 @@ class HorillaMailFieldSelectionView(LoginRequiredMixin, TemplateView):
         try:
             if tab_type == "instance" and model_name or content_type_id:
                 if model_name:
-                    content_type = ContentType.objects.get(model=model_name.lower())
+                    content_type = HorillaContentType.objects.get(
+                        model=model_name.lower()
+                    )
                 else:
-                    content_type = ContentType.objects.get(id=content_type_id)
+                    content_type = HorillaContentType.objects.get(id=content_type_id)
                     # Use content_type.model (e.g. 'employee') for URLs, not verbose_name,
-                    # so tab links send a value that ContentType.objects.get(model=...) can find
+                    # so tab links send a value that HorillaContentType.objects.get(model=...) can find
                     model_name = content_type.model
                 model_class = apps.get_model(
                     app_label=content_type.app_label, model_name=content_type.model

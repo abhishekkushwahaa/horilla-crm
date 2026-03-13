@@ -8,11 +8,8 @@ from collections.abc import Iterable
 
 # Django imports
 from django.conf import settings
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser, UserManager
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
-from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
 
@@ -20,6 +17,7 @@ from django.utils.html import format_html
 from django_countries.fields import CountryField
 
 # First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.choices import (
     DATE_FORMAT_CHOICES,
@@ -30,8 +28,11 @@ from horilla.utils.choices import (
 )
 from horilla.utils.translation import gettext_lazy as _
 from horilla.utils.upload import upload_path
-from horilla_core.models import Company, Department, MultipleCurrency, Role
 from horilla_utils.methods import render_template
+
+from .base import Company, HorillaContentType
+from .finance import MultipleCurrency
+from .organization import Department, Role
 
 
 class HorillaUser(AbstractUser):
@@ -289,7 +290,7 @@ class HorillaUser(AbstractUser):
             self.username = self.email
 
         if not self.password and self.contact_number:
-            self.password = make_password(self.contact_number)
+            self.password = self.set_password(self.contact_number)
 
         super().save(*args, **kwargs)
 
@@ -366,7 +367,7 @@ class FieldPermission(models.Model):
     )
 
     # Model and field information
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(HorillaContentType, on_delete=models.CASCADE)
     field_name = models.CharField(max_length=255)
 
     # Permission type

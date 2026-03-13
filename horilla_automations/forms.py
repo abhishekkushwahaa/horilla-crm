@@ -4,13 +4,14 @@ Forms for the horilla_automations app
 
 # Third-party imports (Django)
 from django import forms
-from django.contrib.contenttypes.models import ContentType
-from django.db import models
 
-# First-party / Horilla imports
 from horilla.apps import apps
 from horilla.auth.models import User
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
+from horilla_core.models import HorillaContentType
 from horilla_generics.forms import HorillaModelForm
 from horilla_mail.models import HorillaMailConfiguration
 
@@ -177,14 +178,16 @@ class HorillaAutomationForm(HorillaModelForm):
                                         is_user_model = issubclass(related_model, User)
                                     except (TypeError, AttributeError):
                                         pass
-                                # Check using ContentType (most reliable method)
+                                # Check using HorillaContentType (most reliable method)
                                 if not is_user_model:
                                     try:
                                         user_content_type = (
-                                            ContentType.objects.get_for_model(User)
+                                            HorillaContentType.objects.get_for_model(
+                                                User
+                                            )
                                         )
                                         field_content_type = (
-                                            ContentType.objects.get_for_model(
+                                            HorillaContentType.objects.get_for_model(
                                                 related_model
                                             )
                                         )

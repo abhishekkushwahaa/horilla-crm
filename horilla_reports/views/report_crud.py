@@ -1,5 +1,6 @@
 """CRUD views for creating, updating, and managing reports."""
 
+# Standard library imports
 import copy
 from functools import cached_property
 
@@ -8,7 +9,6 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
-from django.contrib.contenttypes.models import ContentType
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
@@ -24,6 +24,7 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+from horilla_core.models import HorillaContentType
 from horilla_generics.forms import HorillaModelForm
 from horilla_generics.views import HorillaSingleFormView
 from horilla_reports.forms import ChangeChartReportForm, ReportForm
@@ -230,13 +231,13 @@ class CreateReportView(LoginRequiredMixin, HorillaSingleFormView):
         choices = []
         if module_id:
             try:
-                content_type = ContentType.objects.get(id=module_id)
+                content_type = HorillaContentType.objects.get(id=module_id)
                 temp_report = Report(module=content_type)
                 fields = temp_report.get_available_fields()
                 choices = [
                     (field["name"], f"{field['verbose_name']}") for field in fields
                 ]
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 choices = []
 
         form.fields["selected_columns"].choices = choices
@@ -286,7 +287,7 @@ class UpdateReportView(LoginRequiredMixin, HorillaSingleFormView):
             if report.report_owner == request.user:
                 return super().get(request, *args, **kwargs)
 
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -330,7 +331,7 @@ class MoveReportView(LoginRequiredMixin, HorillaSingleFormView):
             if report.report_owner == request.user:
                 return super().get(request, *args, **kwargs)
 
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
     def get_form(self, form_class=None):
         """Return form with folder widget styling and queryset limited to user's folders for non-superusers."""
@@ -390,7 +391,7 @@ class MoveFolderView(LoginRequiredMixin, HorillaSingleFormView):
             if folder.report_folder_owner == request.user:
                 return super().get(request, *args, **kwargs)
 
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
     def get_form(self, form_class=None):
         """Return form with parent widget styling and queryset limited to user's folders for non-superusers."""
@@ -427,14 +428,14 @@ class GetModuleColumnsHTMXView(LoginRequiredMixin, View):
 
         if module_id:
             try:
-                content_type = ContentType.objects.get(id=module_id)
+                content_type = HorillaContentType.objects.get(id=module_id)
                 temp_report = Report(module=content_type)
                 fields = temp_report.get_available_fields()
 
                 choices = [
                     (field["name"], f"{field['verbose_name']}") for field in fields
                 ]
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 choices = []
 
         widget = forms.SelectMultiple(

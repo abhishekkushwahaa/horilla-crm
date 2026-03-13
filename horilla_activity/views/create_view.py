@@ -8,13 +8,12 @@ import datetime
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
-from django.db import models
 from django.utils import timezone
 from django.utils.functional import cached_property  # type: ignore
 
 # First-party imports (Horilla)
 from horilla.apps import apps
+from horilla.db import models
 from horilla.http import Http404, HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
@@ -27,8 +26,7 @@ from horilla_activity.forms import (
     MeetingsForm,
 )
 from horilla_activity.models import Activity
-
-# First-party / Horilla apps
+from horilla_core.models import HorillaContentType
 from horilla_generics.views import HorillaSingleFormView
 
 
@@ -122,12 +120,12 @@ class TaskCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 if not user_is_owner and not request.user.has_perm(
                     "horilla_activity.add_activity"
                 ):
-                    return render(request, "error/403.html")
+                    return render(request, "403.html")
 
                 return super().get(request, *args, **kwargs)
 
             except LookupError:
-                return render(request, "error/403.html")
+                return render(request, "403.html")
         if pk:
             if not self.model.objects.filter(
                 owner_id=self.request.user, pk=pk
@@ -135,7 +133,7 @@ class TaskCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 "horilla_activity.change_activity"
             ):
                 return super().get(request, *args, **kwargs)
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
     def get_initial(self):
         """Set initial form data from GET params (object_id, model_name) for task creation."""
@@ -144,7 +142,7 @@ class TaskCreateForm(LoginRequiredMixin, HorillaSingleFormView):
         model_name = self.request.GET.get("model_name")
         if object_id and model_name:
             initial["object_id"] = object_id
-            content_type = ContentType.objects.get(model=model_name.lower())
+            content_type = HorillaContentType.objects.get(model=model_name.lower())
             initial["content_type"] = content_type.id
             initial["owner"] = self.request.user
             initial["activity_type"] = "task"
@@ -220,7 +218,7 @@ class MeetingsCreateForm(LoginRequiredMixin, HorillaSingleFormView):
 
             if object_id and model_name:
                 initial["object_id"] = object_id
-                content_type = ContentType.objects.get(model=model_name.lower())
+                content_type = HorillaContentType.objects.get(model=model_name.lower())
                 initial["content_type"] = content_type.id
                 initial["activity_type"] = "meeting"
                 initial["owner"] = self.request.user
@@ -281,12 +279,12 @@ class MeetingsCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 if not user_is_owner and not request.user.has_perm(
                     "horilla_activity.add_activity"
                 ):
-                    return render(request, "error/403.html")
+                    return render(request, "403.html")
 
                 return super().get(request, *args, **kwargs)
 
             except LookupError:
-                return render(request, "error/403.html")
+                return render(request, "403.html")
         if pk:
             if not self.model.objects.filter(
                 owner_id=self.request.user, pk=pk
@@ -294,7 +292,7 @@ class MeetingsCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 "horilla_activity.change_activity"
             ):
                 return super().get(request, *args, **kwargs)
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -367,7 +365,7 @@ class CallCreateForm(LoginRequiredMixin, HorillaSingleFormView):
 
         if object_id and model_name:
             initial["object_id"] = object_id
-            content_type = ContentType.objects.get(model=model_name.lower())
+            content_type = HorillaContentType.objects.get(model=model_name.lower())
             initial["content_type"] = content_type.id
             initial["activity_type"] = "log_call"
             initial["owner"] = self.request.user
@@ -428,12 +426,12 @@ class CallCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 if not user_is_owner and not request.user.has_perm(
                     "horilla_activity.add_activity"
                 ):
-                    return render(request, "error/403.html")
+                    return render(request, "403.html")
 
                 return super().get(request, *args, **kwargs)
 
             except LookupError:
-                return render(request, "error/403.html")
+                return render(request, "403.html")
         if pk:
             if not self.model.objects.filter(
                 owner_id=self.request.user, pk=pk
@@ -441,7 +439,7 @@ class CallCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 "horilla_activity.change_activity"
             ):
                 return super().get(request, *args, **kwargs)
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
     def form_valid(self, form):
         """
@@ -545,12 +543,12 @@ class EventCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 if not user_is_owner and not request.user.has_perm(
                     "horilla_activity.add_activity"
                 ):
-                    return render(request, "error/403.html")
+                    return render(request, "403.html")
 
                 return super().get(request, *args, **kwargs)
 
             except LookupError:
-                return render(request, "error/403.html")
+                return render(request, "403.html")
         if pk:
             if not self.model.objects.filter(
                 owner_id=self.request.user, pk=pk
@@ -558,7 +556,7 @@ class EventCreateForm(LoginRequiredMixin, HorillaSingleFormView):
                 "horilla_activity.change_activity"
             ):
                 return super().get(request, *args, **kwargs)
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
     def get_initial(self):
         """Set initial event form data from GET/POST, including is_all_day and related fields."""
@@ -585,7 +583,7 @@ class EventCreateForm(LoginRequiredMixin, HorillaSingleFormView):
 
             if object_id and model_name:
                 initial["object_id"] = object_id
-                content_type = ContentType.objects.get(model=model_name.lower())
+                content_type = HorillaContentType.objects.get(model=model_name.lower())
                 initial["content_type"] = content_type.id
                 initial["activity_type"] = "event"
                 initial["owner"] = self.request.user
@@ -625,7 +623,6 @@ class ActivityCreateView(LoginRequiredMixin, HorillaSingleFormView):
     model = Activity
     form_class = ActivityCreateForm
     success_url = reverse_lazy("horilla_activity:activity_list")
-    form_title = "Create Activity"
     view_id = "activity-form-view"
     save_and_new = False
     full_width_fields = ["description", "notes"]
@@ -761,7 +758,7 @@ class ActivityCreateView(LoginRequiredMixin, HorillaSingleFormView):
 
             if object_id and model_name:
                 initial["object_id"] = object_id
-                content_type = ContentType.objects.get(model=model_name.lower())
+                content_type = HorillaContentType.objects.get(model=model_name.lower())
                 initial["content_type"] = content_type.id
 
         return initial

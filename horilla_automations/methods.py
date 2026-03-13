@@ -8,7 +8,6 @@ import threading
 from urllib.parse import urlencode, urlparse
 
 # Third-party imports (Django)
-from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.template import engines
 from django.utils import timezone
@@ -16,6 +15,7 @@ from django.utils import timezone
 # First-party / Horilla imports
 from horilla.auth.models import User
 from horilla_automations.models import HorillaAutomation
+from horilla_core.models import HorillaContentType
 from horilla_mail.models import HorillaMail, HorillaMailConfiguration
 from horilla_mail.services import HorillaMailManager
 from horilla_notifications.methods import create_notification
@@ -455,7 +455,7 @@ def send_automation_email(automation, instance, recipients, context, user):
             user.company if hasattr(user, "company") and user else None
         )
 
-        content_type = ContentType.objects.get_for_model(instance)
+        content_type = HorillaContentType.objects.get_for_model(instance)
 
         # Get mail server - use the one selected in automation, or fall back to default
         sender = automation.mail_server
@@ -752,7 +752,7 @@ def trigger_automations(instance, trigger_type="on_create", user=None):
         user: User who triggered the automation (optional)
     """
     try:
-        content_type = ContentType.objects.get_for_model(instance)
+        content_type = HorillaContentType.objects.get_for_model(instance)
 
         # Get company from instance if it has one
         company = None

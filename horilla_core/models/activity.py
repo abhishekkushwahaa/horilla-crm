@@ -3,7 +3,6 @@ Model to track recently viewed items by users."""
 
 # Django imports
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 # First-party imports (Horilla)
@@ -11,6 +10,8 @@ from horilla.db import models
 from horilla.menu.sub_section_menu import sub_section_menu
 from horilla.registry.permission_registry import permission_exempt_model
 from horilla.utils.translation import gettext_lazy as _
+
+from .base import HorillaContentType
 
 
 class RecentlyViewedManager(models.Manager):
@@ -20,7 +21,7 @@ class RecentlyViewedManager(models.Manager):
 
     def add_viewed_item(self, user, obj):
         """Add or update a recently viewed item for a user."""
-        content_type = ContentType.objects.get_for_model(obj)
+        content_type = HorillaContentType.objects.get_for_model(obj)
         self.filter(user=user, content_type=content_type, object_id=obj.pk).delete()
         self.create(user=user, content_type=content_type, object_id=obj.pk)
         if self.filter(user=user).count() > 25:
@@ -35,7 +36,7 @@ class RecentlyViewedManager(models.Manager):
         """Get recently viewed items for a user, optionally filtered by model class."""
         queryset = self.filter(user=user).order_by("-viewed_at")
         if model_class:
-            content_type = ContentType.objects.get_for_model(model_class)
+            content_type = HorillaContentType.objects.get_for_model(model_class)
             queryset = queryset.filter(content_type=content_type)
         return [item.content_object for item in queryset if item.content_object][:limit]
 
@@ -51,7 +52,7 @@ class RecentlyViewed(models.Model):
         on_delete=models.CASCADE,
         related_name="recently_viewed_items",
     )
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(HorillaContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = models.GenericForeignKey("content_type", "object_id")
     viewed_at = models.DateTimeField(default=timezone.now)

@@ -2,10 +2,8 @@
 model for horilla notifications
 """
 
-from django.conf import settings
-
 # Third party imports (Django)
-from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 
 from horilla.core.exceptions import ValidationError
 
@@ -45,7 +43,7 @@ class Notification(models.Model):
     read = models.BooleanField(default=False)
     # Optional link to the related object (e.g. department, lead) for detail popup when url is missing
     content_type = models.ForeignKey(
-        ContentType,
+        HorillaContentType,
         on_delete=models.CASCADE,
         null=True,
         blank=True,

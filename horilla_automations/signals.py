@@ -8,15 +8,16 @@ import sys
 
 # Third-party imports (Django)
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
-# First-party / Horilla imports
 from horilla_automations.methods import trigger_automations
 from horilla_automations.models import HorillaAutomation
 from horilla_automations.tasks import execute_automation_task
+
+# First-party / Horilla imports
+from horilla_core.models import HorillaContentType
 from horilla_utils.middlewares import _thread_local
 
 # Try to import Celery task, but don't fail if Celery is not available
@@ -71,13 +72,13 @@ def trigger_automations_on_save(sender, instance, created, **kwargs):
     if sender == HorillaAutomation:
         return
 
-    # Skip if this is a ContentType or other system models
-    if sender in [ContentType]:
+    # Skip if this is a HorillaContentType or other system models
+    if sender in [HorillaContentType]:
         return
 
     try:
         # Check if there are any automations for this model
-        content_type = ContentType.objects.get_for_model(instance)
+        content_type = HorillaContentType.objects.get_for_model(instance)
         has_automations = HorillaAutomation.objects.filter(model=content_type).exists()
 
         if not has_automations:
@@ -167,13 +168,13 @@ def trigger_automations_on_delete(sender, instance, **kwargs):
     if sender == HorillaAutomation:
         return
 
-    # Skip if this is a ContentType or other system models
-    if sender in [ContentType]:
+    # Skip if this is a HorillaContentType or other system models
+    if sender in [HorillaContentType]:
         return
 
     try:
         # Check if there are any automations for this model
-        content_type = ContentType.objects.get_for_model(instance)
+        content_type = HorillaContentType.objects.get_for_model(instance)
         has_automations = HorillaAutomation.objects.filter(
             model=content_type, trigger="on_delete"
         ).exists()

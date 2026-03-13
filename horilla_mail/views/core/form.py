@@ -5,10 +5,9 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.views.generic import TemplateView
 
-# First-party (Horilla)
+# First-party / Horilla apps
 from horilla.apps import apps
 from horilla.core.exceptions import ValidationError
 from horilla.http import HttpResponse, JsonResponse
@@ -19,8 +18,7 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext as _
-
-# First-party / Horilla apps
+from horilla_core.models import HorillaContentType
 from horilla_mail.models import (
     HorillaMail,
     HorillaMailAttachment,
@@ -148,12 +146,12 @@ class HorillaMailFormView(LoginRequiredMixin, TemplateView):
         return response
 
     def _get_content_type(self, model_name, object_id, request):
-        """Get ContentType for model_name if provided."""
+        """Get HorillaContentType for model_name if provided."""
         if not (model_name and object_id):
             return None
         try:
-            return ContentType.objects.get(model=model_name.lower())
-        except ContentType.DoesNotExist:
+            return HorillaContentType.objects.get(model=model_name.lower())
+        except HorillaContentType.DoesNotExist:
             messages.error(request, f"Invalid model name: {model_name}")
             return None
 
@@ -463,7 +461,9 @@ class HorillaMailFormView(LoginRequiredMixin, TemplateView):
         else:
             if model_name and object_id:
                 try:
-                    content_type = ContentType.objects.get(model=model_name.lower())
+                    content_type = HorillaContentType.objects.get(
+                        model=model_name.lower()
+                    )
 
                     company = getattr(self.request, "active_company", None)
 
@@ -522,7 +522,7 @@ class HorillaMailFormView(LoginRequiredMixin, TemplateView):
                     except Exception as e:
                         context["related_object"] = None
 
-                except ContentType.DoesNotExist:
+                except HorillaContentType.DoesNotExist:
                     pass
                 except Exception as e:
                     pass

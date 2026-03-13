@@ -5,7 +5,6 @@ import mimetypes
 import re
 
 # Third party imports (Django)
-from django.contrib.contenttypes.models import ContentType
 from django.template import engines
 
 from horilla.core.exceptions import ValidationError
@@ -225,7 +224,7 @@ class HorillaMail(HorillaCoreModel):
         max_length=255, blank=True, null=True, verbose_name=_("Subject")
     )
     body = models.TextField(blank=True, null=True, verbose_name=_("Body"))
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(HorillaContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     related_to = models.GenericForeignKey("content_type", "object_id")
     mail_status = models.CharField(

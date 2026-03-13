@@ -7,13 +7,13 @@ from pathlib import Path
 # Django / third-party imports
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.views.generic import TemplateView, View
 
 # First-party (Horilla) imports
 from horilla.apps import apps
 from horilla.http import HttpResponse
 from horilla.utils.decorators import htmx_required, method_decorator
+from horilla_core.models import HorillaContentType
 from horilla_reports.models import Report, ReportFolder
 
 
@@ -131,11 +131,13 @@ class CreateSelectedDefaultReportsView(LoginRequiredMixin, View):
                 model_name = module_info.get("model")
                 if app_label and model_name:
                     try:
-                        module_ct = ContentType.objects.get(
+                        module_ct = HorillaContentType.objects.get(
                             app_label=app_label, model=model_name
                         )
-                    except ContentType.DoesNotExist:
-                        print(f"ContentType not found for {app_label}.{model_name}")
+                    except HorillaContentType.DoesNotExist:
+                        print(
+                            f"HorillaContentType not found for {app_label}.{model_name}"
+                        )
                         continue  # skip if module not installed
 
             if module_ct:

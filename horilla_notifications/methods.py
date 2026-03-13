@@ -4,10 +4,10 @@ This module provides helper methods for creating notifications and limiting cont
 
 # Notification helper methods
 
-from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from horilla_core.models import HorillaContentType
 
-from horilla.registry.feature import FEATURE_REGISTRY
+# First-party / Horilla apps
+from horilla_notifications.models import Notification
 
 
 def create_notification(
@@ -35,14 +35,13 @@ def create_notification(
     object_id = None
     if instance is not None:
         try:
-            content_type = ContentType.objects.get_for_model(instance)
+            content_type = HorillaContentType.objects.get_for_model(instance)
             object_id = instance.pk
         except Exception:
             pass
 
     try:
         # Lazy import to avoid circular import
-        from horilla_notifications.models import Notification
 
         notification = Notification(
             user=user,

@@ -12,14 +12,15 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
 from django_countries.fields import CountryField
 from djmoney.settings import CURRENCY_CHOICES
 
-# First-party / Horilla imports
 from horilla.apps import apps
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.registry.permission_registry import permission_exempt_model
 from horilla.urls import reverse_lazy
 from horilla.utils.choices import (
@@ -368,11 +369,11 @@ class HorillaCoreModel(models.Model):
         own_history = list(self.history.all())
 
         current_model = self.__class__
-        content_type = ContentType.objects.get_for_model(current_model)
+        content_type = HorillaContentType.objects.get_for_model(current_model)
         related_history = []
 
         model_ct_map = {
-            model: ContentType.objects.get_for_model(model)
+            model: HorillaContentType.objects.get_for_model(model)
             for model in apps.get_models()
         }
 

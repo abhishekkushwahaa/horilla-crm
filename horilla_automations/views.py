@@ -9,15 +9,15 @@ from functools import cached_property
 # Third-party imports (Django)
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
-from django.db import models
 from django.db.models import Q
 from django.utils.html import escape
 from django.views import View
 
-# First-party imports (Horilla)
 from horilla.apps import apps
 from horilla.auth.models import User
+
+# First-party / Horilla apps
+from horilla.db import models
 from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
@@ -27,8 +27,6 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-
-# First-party / Horilla apps
 from horilla_automations.filters import HorillaAutomationFilter
 from horilla_automations.forms import HorillaAutomationForm
 from horilla_automations.models import AutomationCondition, HorillaAutomation
@@ -142,7 +140,6 @@ class HorillaAutomationListView(LoginRequiredMixin, HorillaListView):
     bulk_update_two_column = True
     table_width = False
     bulk_delete_enabled = False
-    table_height = False
     table_height_as_class = "h-[calc(_100vh_-_310px_)]"
     bulk_select_option = False
     list_column_visibility = False
@@ -418,13 +415,11 @@ class AutomationFieldChoicesView(LoginRequiredMixin, View):
                                             pass
                                     if not is_user_model:
                                         try:
-                                            user_content_type = (
-                                                ContentType.objects.get_for_model(User)
+                                            user_content_type = HorillaContentType.objects.get_for_model(
+                                                User
                                             )
-                                            field_content_type = (
-                                                ContentType.objects.get_for_model(
-                                                    related_model
-                                                )
+                                            field_content_type = HorillaContentType.objects.get_for_model(
+                                                related_model
                                             )
                                             if user_content_type == field_content_type:
                                                 is_user_model = True
@@ -579,14 +574,16 @@ class MailToChoicesView(LoginRequiredMixin, View):
                                 is_user_model = issubclass(related_model, User)
                             except (TypeError, AttributeError):
                                 pass
-                        # Check using ContentType (most reliable method)
+                        # Check using HorillaContentType (most reliable method)
                         if not is_user_model:
                             try:
-                                user_content_type = ContentType.objects.get_for_model(
-                                    User
+                                user_content_type = (
+                                    HorillaContentType.objects.get_for_model(User)
                                 )
-                                field_content_type = ContentType.objects.get_for_model(
-                                    related_model
+                                field_content_type = (
+                                    HorillaContentType.objects.get_for_model(
+                                        related_model
+                                    )
                                 )
                                 if user_content_type == field_content_type:
                                     is_user_model = True

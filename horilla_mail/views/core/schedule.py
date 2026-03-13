@@ -7,15 +7,13 @@ from datetime import datetime
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.template import Context, Template
 from django.utils import timezone
-from django.utils.html import format_html
 from django.views import View
 
 from horilla.http import HttpResponse, RedirectResponse
 
-# First-party (Horilla)
+# First-party / Horilla apps
 from horilla.shortcuts import render
 from horilla.utils.decorators import (
     htmx_required,
@@ -23,8 +21,7 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext as _
-
-# First-party / Horilla apps
+from horilla_core.models import HorillaContentType
 from horilla_generics.views import HorillaSingleDeleteView
 from horilla_mail.models import (
     HorillaMail,
@@ -307,8 +304,8 @@ class ScheduleMailView(LoginRequiredMixin, View):
         content_type = None
         if model_name and object_id:
             try:
-                content_type = ContentType.objects.get(model=model_name.lower())
-            except ContentType.DoesNotExist:
+                content_type = HorillaContentType.objects.get(model=model_name.lower())
+            except HorillaContentType.DoesNotExist:
                 errors["non_field_error"] = f"Invalid model name: {model_name}"
                 return self._render_error_response(
                     request,

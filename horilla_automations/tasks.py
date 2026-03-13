@@ -9,12 +9,11 @@ This module provides background tasks for:
 import logging
 
 from celery import shared_task
-from django.contrib.contenttypes.models import ContentType
 
 from horilla.auth.models import User
 from horilla_automations.methods import execute_automation, trigger_automations
 from horilla_automations.models import HorillaAutomation
-from horilla_core.models import Company
+from horilla_core.models import Company, HorillaContentType
 from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
@@ -66,7 +65,7 @@ def execute_automation_task(
     Celery task to execute automations asynchronously.
 
     Args:
-        content_type_id: ID of the ContentType for the instance
+        content_type_id: ID of the HorillaContentType for the instance
         object_id: ID of the instance that triggered the automation
         trigger_type: Type of trigger ('on_create', 'on_update', 'on_delete')
         user_id: ID of the user who triggered the automation (optional)
@@ -75,7 +74,7 @@ def execute_automation_task(
     """
     try:
         # Get the content type and instance
-        content_type = ContentType.objects.get(pk=content_type_id)
+        content_type = HorillaContentType.objects.get(pk=content_type_id)
         model_class = content_type.model_class()
 
         if not model_class:

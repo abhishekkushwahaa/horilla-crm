@@ -3,11 +3,10 @@ Forms module for Activity-related operations including Meetings,
 Calls, Events, and general Activity creation.
 """
 
+# Third-party imports (Django)
 from collections import OrderedDict
 
-# Third-party imports (Django)
 from django import forms
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.forms import ValidationError
 
@@ -17,6 +16,7 @@ from horilla.auth.models import User
 from horilla.urls import reverse_lazy
 from horilla_activity.models import Activity
 from horilla_core.mixins import OwnerQuerysetMixin
+from horilla_core.models import HorillaContentType
 from horilla_generics.forms import HorillaModelForm
 
 
@@ -66,14 +66,14 @@ class MeetingsForm(OwnerQuerysetMixin, HorillaModelForm):
             self.fields["is_all_day"].widget.attrs.update(
                 {
                     "hx-get": (
-                        f"/activity/meeting-update-form/{self.instance.pk}"
+                        f"/activity/meeting-update-form/{self.instance.pk}/"
                         "?toggle_is_all_day=true"
                     )
                 }
             )
         else:
             self.fields["is_all_day"].widget.attrs.update(
-                {"hx-get": "/activity/meeting-create-form"}
+                {"hx-get": "/activity/meeting-create-form/"}
             )
 
         is_all_day = (
@@ -235,14 +235,14 @@ class EventForm(OwnerQuerysetMixin, HorillaModelForm):
             self.fields["is_all_day"].widget.attrs.update(
                 {
                     "hx-get": (
-                        f"/activity/event-update-form/{self.instance.pk}"
+                        f"/activity/event-update-form/{self.instance.pk}/"
                         "?toggle_is_all_day=true"
                     )
                 }
             )
         else:
             self.fields["is_all_day"].widget.attrs.update(
-                {"hx-get": "/activity/event-create-form"}
+                {"hx-get": "/activity/event-create-form/"}
             )
 
         is_all_day = (
@@ -359,10 +359,30 @@ class ActivityCreateForm(OwnerQuerysetMixin, HorillaModelForm):
 
         # Base URL for hx-get
         base_url = (
-            f"/activity/activity-edit-form/{self.instance.pk}?toggle_is_all_day=true"
+            f"/activity/activity-edit-form/{self.instance.pk}/?toggle_is_all_day=true"
             if self.instance.pk
-            else "/activity/activity-create-form"
+            else "/activity/activity-create-form/"
         )
+
+        current_content_type_id = (
+            self.data.get("content_type")
+            if self.data
+            else self.initial.get("content_type")
+        )
+        if not current_content_type_id and self.instance.pk:
+            current_content_type_id = self.instance.content_type_id
+
+        if current_content_type_id and "content_type" in self.fields:
+            resolved_content_type_id = (
+                current_content_type_id.id
+                if hasattr(current_content_type_id, "id")
+                else current_content_type_id
+            )
+            self.initial["content_type"] = resolved_content_type_id
+            self.fields["content_type"].initial = resolved_content_type_id
+            self.fields["content_type"].widget.attrs["data-initial"] = str(
+                resolved_content_type_id
+            )
 
         # Update widget attributes for fields that are always present
         self.fields["activity_type"].widget.attrs.update({"hx-get": base_url})
@@ -402,11 +422,7 @@ class ActivityCreateForm(OwnerQuerysetMixin, HorillaModelForm):
         if hasattr(self, "initial") and "activity_type" in self.initial:
             self.fields["activity_type"].initial = self.initial["activity_type"]
 
-        content_type_id = (
-            self.data.get("content_type")
-            if self.data
-            else self.initial.get("content_type")
-        )
+        content_type_id = current_content_type_id
         field_name = "object_id"
         submitted_values = self.data.getlist(field_name) if self.data else None
         initial_value = self.initial.get(field_name, None)
@@ -420,7 +436,7 @@ class ActivityCreateForm(OwnerQuerysetMixin, HorillaModelForm):
 
         if content_type_id:
             try:
-                content_type = ContentType.objects.get(id=content_type_id)
+                content_type = HorillaContentType.objects.get(id=content_type_id)
                 app_label = content_type.app_label
                 model_name = content_type.model
                 object_id_attrs["data-url"] = reverse_lazy(
@@ -437,7 +453,7 @@ class ActivityCreateForm(OwnerQuerysetMixin, HorillaModelForm):
                     self.fields["object_id"].choices = [
                         ("", "Select Related Object")
                     ] + [(obj.id, str(obj)) for obj in objects]
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 object_id_attrs["data-url"] = ""
                 self.fields["object_id"].choices = [("", "Select Related Object")]
         else:

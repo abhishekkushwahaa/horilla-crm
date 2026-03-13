@@ -9,7 +9,6 @@ from functools import cached_property
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
-from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
@@ -18,7 +17,7 @@ from horilla.core.exceptions import ValidationError
 from horilla.http import HttpNotFound, HttpResponse, JsonResponse, RefreshResponse
 from horilla.shortcuts import get_object_or_404, render
 
-# First-party (Horilla)
+# First-party / Horilla apps
 from horilla.urls import reverse, reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -26,8 +25,7 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-
-# First-party / Horilla apps
+from horilla_core.models import HorillaContentType
 from horilla_generics.views import (
     HorillaListView,
     HorillaNavView,
@@ -111,7 +109,6 @@ class MailTemplateListView(LoginRequiredMixin, HorillaListView):
     bulk_update_two_column = True
     table_width = False
     bulk_delete_enabled = False
-    table_height = False
     table_height_as_class = "h-[500px]"
     bulk_select_option = False
     list_column_visibility = False
@@ -434,7 +431,7 @@ class SaveAsMailTemplateView(LoginRequiredMixin, View):
             try:
                 instance = form.save(commit=False)
                 model_name = request.POST.get("model_name")
-                instance.content_type = ContentType.objects.get(
+                instance.content_type = HorillaContentType.objects.get(
                     model=model_name.lower()
                 )
                 instance.company = (

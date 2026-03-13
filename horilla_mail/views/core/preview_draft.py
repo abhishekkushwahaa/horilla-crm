@@ -7,11 +7,10 @@ import re
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.utils.html import format_html
 from django.views import View
 
-# First-party (Horilla)
+# First-party / Horilla apps
 from horilla.apps import apps
 from horilla.http import HttpResponse
 from horilla.shortcuts import render
@@ -21,8 +20,7 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext as _
-
-# First-party / Horilla apps
+from horilla_core.models import HorillaContentType
 from horilla_mail.models import (
     HorillaMail,
     HorillaMailAttachment,
@@ -158,7 +156,9 @@ class HorillaMailPreviewView(LoginRequiredMixin, View):
 
             if model_name and object_id:
                 try:
-                    content_type = ContentType.objects.get(model=model_name.lower())
+                    content_type = HorillaContentType.objects.get(
+                        model=model_name.lower()
+                    )
                     draft_mail = HorillaMail.objects.filter(pk=pk).first()
                 except Exception as e:
                     logger.error("Error finding draft mail: %s", e)
@@ -406,8 +406,10 @@ class SaveDraftView(LoginRequiredMixin, View):
             content_type = None
             if model_name and object_id:
                 try:
-                    content_type = ContentType.objects.get(model=model_name.lower())
-                except ContentType.DoesNotExist:
+                    content_type = HorillaContentType.objects.get(
+                        model=model_name.lower()
+                    )
+                except HorillaContentType.DoesNotExist:
                     pass
 
             # Find or create draft (if we don't already have it from change detection)
@@ -488,7 +490,9 @@ class DiscardDraftView(LoginRequiredMixin, View):
 
             if model_name and object_id:
                 try:
-                    content_type = ContentType.objects.get(model=model_name.lower())
+                    content_type = HorillaContentType.objects.get(
+                        model=model_name.lower()
+                    )
                     HorillaMail.objects.filter(
                         pk=pk,
                         content_type=content_type,
@@ -496,7 +500,7 @@ class DiscardDraftView(LoginRequiredMixin, View):
                         mail_status="draft",
                         created_by=request.user,
                     ).delete()
-                except ContentType.DoesNotExist:
+                except HorillaContentType.DoesNotExist:
                     pass
 
             messages.info(request, _("Draft discarded"))

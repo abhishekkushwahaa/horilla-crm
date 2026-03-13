@@ -8,7 +8,6 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 
 # Django / third-party imports
 from django.views.generic import DetailView, FormView
@@ -24,7 +23,7 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import HorillaAttachment
+from horilla_core.models import HorillaAttachment, HorillaContentType
 from horilla_generics.forms import HorillaAttachmentForm
 from horilla_generics.views.delete import HorillaSingleDeleteView
 from horilla_generics.views.details import HorillaModalDetailView
@@ -40,7 +39,6 @@ class AttachmentListView(HorillaListView):
     columns = ["title", "created_by", "created_at"]
     bulk_select_option = False
     list_column_visibility = False
-    table_height = False
     table_height_as_class = "h-[calc(_100vh_-_500px_)]"
     table_width = False
 
@@ -173,8 +171,8 @@ class HorillaNotesAttachementSectionView(DetailView):
         object_id = self.kwargs.get("pk")
 
         try:
-            content_type = ContentType.objects.get_for_model(model=self.model)
-        except ContentType.DoesNotExist:
+            content_type = HorillaContentType.objects.get_for_model(model=self.model)
+        except HorillaContentType.DoesNotExist:
             from horilla.http import HttpResponseNotFound
 
             return HttpResponseNotFound("Model not found")
@@ -346,7 +344,9 @@ class HorillaNotesAttachmentCreateView(LoginRequiredMixin, FormView):
 
             if model_name and object_id:
                 try:
-                    content_type = ContentType.objects.get(model=model_name.lower())
+                    content_type = HorillaContentType.objects.get(
+                        model=model_name.lower()
+                    )
                     related_model = content_type.model_class()
                     related_object = related_model.objects.get(pk=object_id)
 
@@ -361,7 +361,7 @@ class HorillaNotesAttachmentCreateView(LoginRequiredMixin, FormView):
                             "<script>$('#reloadButton').click();$('#reloadMessagesButton').click();closeModal();</script>"
                         )
                 except (
-                    ContentType.DoesNotExist,
+                    HorillaContentType.DoesNotExist,
                     related_model.DoesNotExist,
                     ValueError,
                 ):
@@ -379,7 +379,7 @@ class HorillaNotesAttachmentCreateView(LoginRequiredMixin, FormView):
 
         attachment = form.save(commit=False)
         if not pk:
-            content_type = ContentType.objects.get(model=model_name.lower())
+            content_type = HorillaContentType.objects.get(model=model_name.lower())
             attachment.created_by = self.request.user
             attachment.object_id = self.request.GET.get("object_id")
             attachment.content_type = content_type

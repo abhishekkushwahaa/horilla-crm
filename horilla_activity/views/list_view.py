@@ -7,7 +7,6 @@ from urllib.parse import urlencode
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.utils.functional import cached_property  # type: ignore
 
 # First-party / Horilla imports
@@ -20,6 +19,7 @@ from horilla.utils.decorators import (
 from horilla.utils.translation import gettext_lazy as _
 from horilla_activity.filters import ActivityFilter
 from horilla_activity.models import Activity
+from horilla_core.models import HorillaContentType
 from horilla_generics.views import HorillaListView
 from horilla_mail.models import HorillaMail
 
@@ -142,7 +142,6 @@ class TaskListView(LoginRequiredMixin, HorillaListView):
     paginate_by = 5
     table_class = False
     table_width = False
-    table_height = False
     table_height_as_class = "h-[calc(_100vh_-_500px_)]"
     list_column_visibility = False
 
@@ -227,18 +226,22 @@ class TaskListView(LoginRequiredMixin, HorillaListView):
 
         if object_id and content_type_id:
             try:
-                content_type = ContentType.objects.get(id=content_type_id)
+                content_type = HorillaContentType.objects.get(id=content_type_id)
                 queryset = queryset.filter(
                     object_id=object_id, content_type=content_type, activity_type="task"
                 )
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 queryset = queryset.none()
         else:
             queryset = queryset.none()
 
-        if view_type in status_view_map:
-            queryset = queryset.filter(status=view_type)
-            self.view_id = status_view_map[view_type]
+        # Pending tab = all non-completed tasks (status is workflow: not_started, etc.)
+        if view_type == "completed":
+            queryset = queryset.filter(status="completed")
+            self.view_id = status_view_map["completed"]
+        elif view_type == "pending":
+            queryset = queryset.exclude(status="completed")
+            self.view_id = status_view_map["pending"]
 
         return queryset
 
@@ -266,7 +269,6 @@ class MeetingListView(HorillaListView):
     bulk_select_option = False
     table_class = False
     table_width = False
-    table_height = False
     table_height_as_class = "h-[calc(_100vh_-_500px_)]"
     list_column_visibility = False
 
@@ -353,20 +355,23 @@ class MeetingListView(HorillaListView):
 
         if object_id and content_type_id:
             try:
-                content_type = ContentType.objects.get(id=content_type_id)
+                content_type = HorillaContentType.objects.get(id=content_type_id)
                 queryset = queryset.filter(
                     object_id=object_id,
                     content_type=content_type,
                     activity_type="meeting",
                 )
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 queryset = queryset.none()
         else:
             queryset = queryset.none()
 
-        if view_type in status_view_map:
-            queryset = queryset.filter(status=view_type)
-            self.view_id = status_view_map[view_type]
+        if view_type == "completed":
+            queryset = queryset.filter(status="completed")
+            self.view_id = status_view_map["completed"]
+        elif view_type == "pending":
+            queryset = queryset.exclude(status="completed")
+            self.view_id = status_view_map["pending"]
 
         return queryset
 
@@ -393,7 +398,6 @@ class CallListView(HorillaListView):
     paginate_by = 10
     bulk_select_option = False
     table_class = False
-    table_height = False
     table_height_as_class = "h-[calc(_100vh_-_500px_)]"
     table_width = False
     list_column_visibility = False
@@ -479,20 +483,23 @@ class CallListView(HorillaListView):
 
         if object_id and content_type_id:
             try:
-                content_type = ContentType.objects.get(id=content_type_id)
+                content_type = HorillaContentType.objects.get(id=content_type_id)
                 queryset = queryset.filter(
                     object_id=object_id,
                     content_type=content_type,
                     activity_type="log_call",
                 )
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 queryset = queryset.none()
         else:
             queryset = queryset.none()
 
-        if view_type in status_view_map:
-            queryset = queryset.filter(status=view_type)
-            self.view_id = status_view_map[view_type]
+        if view_type == "completed":
+            queryset = queryset.filter(status="completed")
+            self.view_id = status_view_map["completed"]
+        elif view_type == "pending":
+            queryset = queryset.exclude(status="completed")
+            self.view_id = status_view_map["pending"]
 
         return queryset
 
@@ -520,7 +527,6 @@ class EmailListView(HorillaListView):
     paginate_by = 10
     table_class = False
     table_width = False
-    table_height = False
     table_height_as_class = "h-[calc(_100vh_-_500px_)]"
     list_column_visibility = False
 
@@ -664,11 +670,11 @@ class EmailListView(HorillaListView):
 
         if object_id and content_type_id:
             try:
-                content_type = ContentType.objects.get(id=content_type_id)
+                content_type = HorillaContentType.objects.get(id=content_type_id)
                 queryset = queryset.filter(
                     object_id=object_id, content_type=content_type
                 )
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 queryset = queryset.none()
         else:
             queryset = queryset.none()
@@ -703,7 +709,6 @@ class EventListView(HorillaListView):
     paginate_by = 10
     table_class = False
     table_width = False
-    table_height = False
     table_height_as_class = "h-[calc(_100vh_-_500px_)]"
     list_column_visibility = False
 
@@ -776,20 +781,23 @@ class EventListView(HorillaListView):
 
         if object_id and content_type_id:
             try:
-                content_type = ContentType.objects.get(id=content_type_id)
+                content_type = HorillaContentType.objects.get(id=content_type_id)
                 queryset = queryset.filter(
                     object_id=object_id,
                     content_type=content_type,
                     activity_type="event",
                 )
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 queryset = queryset.none()
         else:
             queryset = queryset.none()
 
-        if view_type in status_view_map:
-            queryset = queryset.filter(status=view_type)
-            self.view_id = status_view_map[view_type]
+        if view_type == "completed":
+            queryset = queryset.filter(status="completed")
+            self.view_id = status_view_map["completed"]
+        elif view_type == "pending":
+            queryset = queryset.exclude(status="completed")
+            self.view_id = status_view_map["pending"]
 
         return queryset
 

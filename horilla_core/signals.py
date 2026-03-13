@@ -8,9 +8,7 @@ models.
 import logging
 from decimal import Decimal
 
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
@@ -29,6 +27,7 @@ from horilla_core.models import (
     DetailFieldVisibility,
     FieldPermission,
     FiscalYear,
+    HorillaContentType,
     ListColumnVisibility,
     MultipleCurrency,
     Role,
@@ -292,7 +291,7 @@ def add_custom_permissions(sender, **kwargs):
         if opts.default_permissions == ():
             continue
 
-        content_type = ContentType.objects.get_for_model(model)
+        content_type = HorillaContentType.objects.get_for_model(model)
 
         add_view_own = (
             "view_own" in opts.default_permissions
@@ -431,7 +430,7 @@ def user_default_field_permissions(sender, instance, created, **kwargs):
                 if not defaults:
                     continue
 
-                content_type = ContentType.objects.get_for_model(model)
+                content_type = HorillaContentType.objects.get_for_model(model)
                 for field_name, perm in defaults.items():
                     FieldPermission.objects.get_or_create(
                         user=instance,
@@ -461,7 +460,7 @@ def role_default_field_permissions(sender, instance, created, **kwargs):
                 if not defaults:
                     continue
 
-                content_type = ContentType.objects.get_for_model(model)
+                content_type = HorillaContentType.objects.get_for_model(model)
 
                 for field_name, perm in defaults.items():
                     # Assign to role
@@ -903,7 +902,7 @@ def clear_list_column_cache_for_model(content_type, affected_users=None):
     for the given model (content_type).
 
     Args:
-        content_type: ContentType instance for the model
+        content_type: HorillaContentType instance for the model
         affected_users: Optional list of user IDs to limit cache clearing to specific users
     """
     try:

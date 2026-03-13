@@ -10,7 +10,6 @@ import re
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.fields import GenericRelation
-from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 
 # Django / third-party imports
@@ -22,6 +21,7 @@ from horilla.http import HttpNotFound, HttpResponse
 from horilla.shortcuts import render
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
+from horilla_core.models import HorillaContentType
 from horilla_generics.views.list import HorillaListView
 from horilla_utils.methods import get_section_info_for_model
 
@@ -479,7 +479,6 @@ class HorillaRelatedListSectionView(DetailView):
         list_view.view_id = f"{view_id}-content" if view_id else None
         list_view.main_url = self.request.path
         list_view.search_url = self.request.path
-        list_view.table_height = False
         list_view.table_height_as_class = "h-[calc(_100vh_-_500px_)]"
         list_view.owner_filtration = False
         return list_view
@@ -571,7 +570,7 @@ class HorillaRelatedListContentView(LoginRequiredMixin, DetailView):
         if not model_name:
             raise HttpNotFound("model_name parameter is required")
         try:
-            content_type = ContentType.objects.get(model=model_name.lower())
+            content_type = HorillaContentType.objects.get(model=model_name.lower())
             app_label = content_type.app_label
             model = apps.get_model(app_label=app_label, model_name=model_name)
             return model.objects.all()

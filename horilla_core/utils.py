@@ -10,14 +10,19 @@ import requests
 from dateutil.parser import parse
 
 # Third-party imports (Django)
-from django.contrib.contenttypes.models import ContentType
-from django.db import models, transaction
+from django.db import transaction
 from django.db.models import QuerySet
 
 # First-party / Horilla imports
 from horilla.apps import apps
+from horilla.db import models
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
-from horilla_core.models import FieldPermission, MultipleCurrency, RecycleBin
+from horilla_core.models import (
+    FieldPermission,
+    HorillaContentType,
+    MultipleCurrency,
+    RecycleBin,
+)
 from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
@@ -386,7 +391,7 @@ def get_user_field_permission(user, model, field_name):
     if user.is_superuser:
         return "readwrite"
 
-    content_type = ContentType.objects.get_for_model(model)
+    content_type = HorillaContentType.objects.get_for_model(model)
 
     user_perm = FieldPermission.objects.filter(
         user=user, content_type=content_type, field_name=field_name
@@ -429,7 +434,7 @@ def get_field_permissions_for_model(user, model):
     if user.is_superuser:
         return {}
 
-    content_type = ContentType.objects.get_for_model(model)
+    content_type = HorillaContentType.objects.get_for_model(model)
     permissions_dict = {}
 
     user_perms = FieldPermission.objects.filter(user=user, content_type=content_type)

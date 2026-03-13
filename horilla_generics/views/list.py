@@ -14,6 +14,7 @@ from django.db.models import Case, Q, When
 from django.utils.dateparse import parse_date, parse_datetime, parse_time
 from django.views.generic import ListView
 
+from horilla.db.models.fields import GenericForeignKey
 from horilla.http import HttpResponse, QueryDict
 
 # First-party (Horilla)
@@ -69,7 +70,6 @@ class HorillaListView(HorillaListViewMixin, ListView):
     table_width = True
     table_class = True
     table_height_as_class = ""
-    table_height = True
     bulk_update_option = True
     store_ordered_ids = False
     save_to_list_option = True
@@ -287,7 +287,6 @@ class HorillaListView(HorillaListViewMixin, ListView):
         # Check if the field is a GenericForeignKey
         try:
             field_obj = model_class._meta.get_field(mapped_field)
-            from django.contrib.contenttypes.fields import GenericForeignKey
 
             if isinstance(field_obj, GenericForeignKey):
                 # Sort by content_type_id and then object_id
@@ -829,7 +828,6 @@ class HorillaListView(HorillaListViewMixin, ListView):
         context["table_width"] = self.table_width
         context["table_class"] = self.table_class
         context["table_height_as_class"] = self.table_height_as_class
-        context["table_height"] = self.table_height
         context["save_to_list_option"] = self.save_to_list_option
 
         # Let helper inject quick filter-related context

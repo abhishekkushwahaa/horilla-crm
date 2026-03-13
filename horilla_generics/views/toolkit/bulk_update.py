@@ -14,13 +14,13 @@ from auditlog.models import LogEntry
 
 # Third-party imports (Django)
 from django.contrib import messages
-from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 from horilla.http import HttpResponse
 
 # First-party imports (Horilla)
 from horilla.shortcuts import render
+from horilla_core.models import HorillaContentType
 from horilla_core.utils import get_editable_fields
 
 logger = logging.getLogger(__name__)
@@ -193,7 +193,7 @@ class HorillaBulkUpdateMixin:
                 )
 
             records_before = {obj.id: obj for obj in queryset}
-            content_type = ContentType.objects.get_for_model(self.model)
+            content_type = HorillaContentType.objects.get_for_model(self.model)
             user = self.request.user if self.request.user.is_authenticated else None
 
             updated_count = queryset.update(**update_dict)

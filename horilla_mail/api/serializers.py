@@ -2,9 +2,9 @@
 Serializers for horilla_mail models, consistent with horilla_core conventions
 """
 
-from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
+from horilla_core.models import HorillaContentType
 from horilla_mail.models import (
     HorillaMail,
     HorillaMailAttachment,
@@ -57,14 +57,16 @@ class HorillaMailSerializer(serializers.ModelSerializer):
         object_id = attrs.get("object_id") or getattr(self.instance, "object_id", None)
         if content_type and object_id is not None:
             try:
-                model_class = ContentType.objects.get(pk=content_type.pk).model_class()
+                model_class = HorillaContentType.objects.get(
+                    pk=content_type.pk
+                ).model_class()
                 if not model_class.objects.filter(pk=object_id).exists():
                     raise serializers.ValidationError(
                         {
                             "object_id": "Related object does not exist for the given content type."
                         }
                     )
-            except ContentType.DoesNotExist:
+            except HorillaContentType.DoesNotExist:
                 raise serializers.ValidationError(
                     {"content_type": "Invalid content type provided."}
                 )
