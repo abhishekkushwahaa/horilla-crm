@@ -283,7 +283,7 @@ class HorillaBulkExportMixin:
                 start_x = 50
                 start_y = height - 100
                 min_col_width = 120
-                padding = 8
+                # padding = 8
                 max_rows_per_page = 7
                 max_cols_per_page = 6
                 extra_row_spacing = 10
@@ -332,7 +332,7 @@ class HorillaBulkExportMixin:
                     for i, header in enumerate(current_col_headers):
                         wrapped_header = wrap_text(header, 18)
                         line_height = header_font_size + 2
-                        total_header_height = len(wrapped_header) * line_height
+                        # total_header_height = len(wrapped_header) * line_height
                         for j, header_line in enumerate(wrapped_header):
                             c.drawString(
                                 x,
@@ -359,7 +359,7 @@ class HorillaBulkExportMixin:
                             for i, header in enumerate(current_col_headers):
                                 wrapped_header = wrap_text(header, 18)
                                 line_height = header_font_size + 2
-                                total_header_height = len(wrapped_header) * line_height
+                                # total_header_height = len(wrapped_header) * line_height
                                 for j, header_line in enumerate(wrapped_header):
                                     c.drawString(
                                         x,
