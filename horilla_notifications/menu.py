@@ -26,5 +26,6 @@ class NotificationSettings:
             "hx-push-url": "true",
             "hx-select": "#notification-template-view",
             "hx-select-oob": "#settings-sidebar",
+            "perm": "horilla_notifications.view_notificationtemplate",
         },
     ]
