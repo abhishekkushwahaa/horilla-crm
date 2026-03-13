@@ -52,6 +52,9 @@ class HorillaDetailView(DetailView):
     excluded_fields = (
         []
     )  # Subclass: add more field names to exclude (extends base_excluded_fields).
+    split_excluded_fields: list = (
+        []
+    )  # Optional extra fields to exclude only in split layout/detail section.
     pipeline_field = ""
     breadcrumbs = []
     actions = []
@@ -121,7 +124,7 @@ class HorillaDetailView(DetailView):
             is_owner and user.has_perm(own_view_perm)
         )
         if not allowed:
-            return render(request, "error/403.html")
+            return render(request, "403.html")
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
@@ -130,6 +133,12 @@ class HorillaDetailView(DetailView):
             login_url = f"{reverse_lazy('horilla_core:login')}?next={request.path}"
             return redirect(login_url)
         return super().get(request, *args, **kwargs)
+
+    def get_template_names(self):
+        """Use fragment template when layout=split for split-view right panel."""
+        if self.request.GET.get("layout") == "split":
+            return ["detail_view_split_fragment.html"]
+        return super().get_template_names()
 
     def get_queryset(self):
         """Return the queryset for the detail view; require model to be set."""
@@ -181,6 +190,36 @@ class HorillaDetailView(DetailView):
             return self._normalize_field_list(self.header_fields, excluded_set)
         full_body = self._normalize_field_list(self.body, excluded_set)
         return [full_body[0]] if full_body else []
+
+    def get_detail_section_body(self):
+        """
+        Return body list for split-view / detail section: all model fields
+        excluding base_excluded_fields, excluded_fields, split_excluded_fields (for split layout),
+        and pipeline_field
+        (same logic as HorillaDetailSectionView.get_default_body).
+        """
+        excluded = list(self.get_excluded_fields())
+        if self.request.GET.get("layout") == "split":
+            for field in getattr(self, "split_excluded_fields", []) or []:
+                if field not in excluded:
+                    excluded.append(field)
+        effective_pf = self._get_effective_pipeline_field()
+        if effective_pf:
+            excluded.append(effective_pf)
+        include_fields = getattr(self, "include_fields", None)
+        if include_fields:
+            return [
+                (f.verbose_name, f.name)
+                for f in self.model._meta.get_fields()
+                if f.name in include_fields
+                and f.name not in excluded
+                and hasattr(f, "verbose_name")
+            ]
+        return [
+            (f.verbose_name, f.name)
+            for f in self.model._meta.get_fields()
+            if f.name not in excluded and hasattr(f, "verbose_name")
+        ]
 
     def get_body(self):
         """Return normalized (verbose_name, field_name) list for details grid. Excluded fields are omitted."""
@@ -273,7 +312,7 @@ class HorillaDetailView(DetailView):
         try:
             obj = self.get_object()
         except Http404:
-            return render(self.request, "error/403.html")
+            return render(self.request, "403.html")
         field = self.model._meta.get_field(self.pipeline_field)
         current_value = getattr(obj, self.pipeline_field)
 
@@ -422,9 +461,23 @@ class HorillaDetailView(DetailView):
         """Add header_fields, body, pipeline_choices, badges, and permissions to context."""
         context = super().get_context_data(**kwargs)
         context["header_fields"] = self.get_header_fields()
-        context["body"] = self.get_body()
-        context["pipeline_choices"] = self.get_pipeline_choices()
         current_obj = self.get_object()
+        # Support split layout flag coming from both GET (initial load)
+        # and POST (e.g. pipeline updates via HTMX hx-vals)
+        is_split_layout = (
+            self.request.GET.get("layout") == "split"
+            or self.request.POST.get("layout") == "split"
+        )
+        if is_split_layout:
+            context["body"] = self.get_detail_section_body()
+            context["split_detail_url"] = (
+                current_obj.get_detail_url()
+                if hasattr(current_obj, "get_detail_url")
+                else None
+            )
+        else:
+            context["body"] = self.get_body()
+        context["pipeline_choices"] = self.get_pipeline_choices()
         current_id = current_obj.id
         context["tab_url"] = self.tab_url
         context["badges"] = self.get_badges()
@@ -482,16 +535,26 @@ class HorillaDetailView(DetailView):
         context["url_name"] = url.url_name
         context["app_label"] = self.model._meta.app_label
 
-        # Pass "Change Fields" URL for visible button when detail view has tab/sections
-        # (button shown in marked area, not in dropdown)
-        detail_actions = self.actions
+        detail_actions = list(self.actions) if self.actions else []
+        if is_split_layout and context.get("split_detail_url"):
+            detail_actions = detail_actions + [
+                {
+                    "action": _("View full detail"),
+                    "src": "assets/icons/eye1.svg",
+                    "img_class": "w-4 h-4",
+                    "attrs": (
+                        f'hx-get="{context["split_detail_url"]}" '
+                        'hx-target="#mainContent" hx-select="#mainContent" '
+                        'hx-swap="outerHTML" hx-push-url="true" '
+                        'hx-indicator="#loading-indicator"'
+                    ),
+                }
+            ]
         if self.tab_url:
             change_fields_url = (
                 f"{reverse('horilla_generics:detail_field_selector')}"
-                f"?app_label={self.model._meta.app_label}&model_name={self.model._meta.model_name}&url_name={url.url_name}"
+                f"?app_label={self.model._meta.app_label}&model_name={self.model._meta.model_name}&url_name={url.url_name}&pk={current_id}"
             )
-            # Infer details section URL from tab view so Fields modal uses same
-            # excluded/visible fields as the Details tab (no need for details_section_url_name on child).
             details_section_url = self._get_details_section_url_for_fields(current_id)
             if details_section_url:
                 change_fields_url += (
@@ -816,6 +879,30 @@ class HorillaDetailView(DetailView):
                 self.request,
                 _(f"{self.model._meta.verbose_name} Stage Updated Successfully"),
             )
+            if request.POST.get("layout") == "split":
+                context = self.get_context_data(object=self.object)
+                context["body"] = self.get_detail_section_body()
+                # Use detail view's url name and namespace for prev/next links (request.path
+                # is update_pipeline here, which would break {% url app_label:url_name %}).
+                if hasattr(self.object, "get_detail_url"):
+                    try:
+                        detail_path = str(self.object.get_detail_url())
+                        if detail_path:
+                            resolved = resolve(detail_path)
+                            context["url_name"] = resolved.url_name
+                            ns = getattr(resolved, "namespace", None) or getattr(
+                                resolved, "app_name", None
+                            )
+                            if ns:
+                                context["app_label"] = ns
+                    except Exception:
+                        pass
+                html = render_to_string(
+                    "detail_view_split_fragment.html",
+                    context,
+                    request=self.request,
+                )
+                return HttpResponse(html)
             context = self.get_context_data(object=self.object)
             context["pipeline_update"] = True
             kanban_html = render_to_string(
