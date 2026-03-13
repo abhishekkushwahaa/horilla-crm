@@ -2,8 +2,8 @@
 {% load i18n %}
 {% load horilla_tags %}
 
-<div id="filterpanel" class="w-full mb-5 rounded-lg bg-white z-50 transform transition-all duration-300 ease-in-out [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] transition-transform duration-300 {% if "apply_filter" in query_params or request.GET.search %}visible  {% else %} hidden {% endif %}">
-  <div class="p-5">
+<div id="filterpanel" class="overflow-y-auto overflow-hidden w-full mb-5 rounded-lg bg-white z-50 transform transition-all duration-300 ease-in-out [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] transition-transform duration-300 {% if "apply_filter" in query_params or request.GET.search %}visible  {% else %} hidden {% endif %}">
+  <div class="p-4">
     <div id ="filtercontainer" class="{% if "apply_filter" in request.GET.urlencode %}visible {% else %} hidden {% endif %}">
     <h5 class="text-sm font-bold mb-3">Filters</h5>
     <form id="filter-form" hx-get="{{ main_url }}?{% for key, value in request.GET.items %}{% if key != 'apply_filter' and key != 'field' and key != 'operator' and key != 'value' and  key != 'hx_trigger' and  key != 'clear_all_filters'   %}{{ key }}={{ value }}&{% endif %}{% endfor %}apply_filter=true"
@@ -21,13 +21,13 @@
         {% include "partials/filter_row.html" with row_id=0 %}
       </div>
 
-      <div class="flex justify-between text-xs mb-6">
+      <div class="flex justify-between text-xs mb-3">
         <div class="w-fit mt-2">
           <button type="button"
                   class="flex gap-2 text-sm text-[#34c759] hover:text-[#287a3d] transition duration-300"
                   hx-get="{{ search_url }}?add_filter_row=true"
                   hx-target="#filter-rows"
-                  hx-vals='{"row_id": "{{ last_row_id }}"}'
+                  hx-vals='js:{"row_id": document.querySelectorAll("#filter-rows .filter-row").length - 1}'
                   hx-select=".filter-row"
                   hx-push-url="false"
                   hx-swap="beforeend"
@@ -43,7 +43,7 @@
     </form>
   </div>
 
-    <div class="p-5 border border-[#0000001a] p-3 rounded-md {% if "apply_filter" in query_params or request.GET.search %}visible {% else %} hidden {% endif %}">
+    <div class="border border-[#0000001a] p-3 rounded-md {% if "apply_filter" in query_params or request.GET.search %}visible {% else %} hidden {% endif %}">
       <div class="flex justify-between">
         <h5 class="text-sm font-bold mb-3">{% trans 'Applied Filters' %}</h5>
         <div class="flex gap-1">
