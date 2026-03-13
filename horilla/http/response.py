@@ -8,9 +8,10 @@ and optional HTMX (HX-Redirect, HX-Refresh) support.
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
 
-from horilla.http import safe_url
 from horilla.shortcuts import render
 from horilla.utils.translation import gettext_lazy as _
+
+from .url_safety import safe_url
 
 
 class HttpNotFound(Exception):
@@ -34,7 +35,7 @@ class HttpNotFound(Exception):
         """
         self.message = message
         self.context = context or {}
-        self.template = template or "error/404.html"
+        self.template = template or "404.html"
         super().__init__(message)
 
     def as_response(self, request):
