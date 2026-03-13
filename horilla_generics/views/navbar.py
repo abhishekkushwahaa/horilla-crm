@@ -5,6 +5,7 @@ This view supports pinned views, recently viewed/created/modified filters, saved
 
 # Standard library
 from functools import cached_property
+from urllib.parse import urlencode
 
 from django.db.models import Q
 
@@ -27,8 +28,10 @@ class HorillaNavView(TemplateView):
     main_url: str = ""
     kanban_url: str = ""
     group_by_url: str = ""
+    card_url: str = ""
+    timeline_url: str = ""
     default_layout: str = (
-        "list"  # "list", "kanban", or "group_by" when no layout in URL
+        "list"  # "list", "kanban", "group_by", or "card" when no layout in URL
     )
     actions: list = []
     new_button: dict = None
@@ -114,6 +117,34 @@ class HorillaNavView(TemplateView):
         context["kanban_view_url"] = self.kanban_url
         context["group_by_url"] = getattr(self, "group_by_url", None) or ""
         context["group_by_view_url"] = getattr(self, "group_by_url", None) or ""
+        context["card_url"] = getattr(self, "card_url", None) or ""
+        context["card_view_url"] = getattr(self, "card_url", None) or ""
+        context["timeline_url"] = getattr(self, "timeline_url", None) or ""
+        # URL to open timeline settings modal with current GET preserved
+        timeline_settings_url = ""
+        if getattr(self, "timeline_url", None):
+            try:
+                base = str(reverse_lazy("horilla_generics:timeline_settings"))
+                params = [
+                    ("app_label", self.model_app_label),
+                    ("model", self.model_name),
+                    ("main_url", context["main_url"]),
+                ]
+                for key in self.request.GET:
+                    if key in ("app_label", "model", "main_url"):
+                        continue
+                    for value in self.request.GET.getlist(key):
+                        params.append((key, value))
+                timeline_settings_url = base + "?" + urlencode(params)
+            except Exception:
+                pass
+        context["timeline_settings_modal_url"] = timeline_settings_url
+        split_url = getattr(self, "split_view_url", None)
+        context["split_view_url"] = str(split_url) if split_url else ""
+        context["split_view_view_url"] = context["split_view_url"]
+        chart_u = getattr(self, "chart_url", None)
+        context["chart_url"] = str(chart_u) if chart_u else ""
+        context["chart_view_url"] = context["chart_url"]
         context["actions"] = self.actions
         context["new_button"] = self.new_button or {}
         context["second_button"] = self.second_button or {}
@@ -186,6 +217,14 @@ class HorillaNavView(TemplateView):
                     }
                 )
 
+            # Effective layout: only append actions relevant to current layout
+            layout = (
+                self.request.GET.get("layout")
+                or getattr(self, "default_layout", "list")
+                or "list"
+            )
+            layout = str(layout).strip().lower()
+
             column_selector_url = (
                 f"{reverse_lazy('horilla_generics:column_selector')}"
                 f"?app_label={self.model_app_label}&model_name={self.model_name}&url_name={url_name}"
@@ -199,56 +238,82 @@ class HorillaNavView(TemplateView):
                 )
                 if exclude_list:
                     column_selector_url += "&exclude=" + ",".join(exclude_list)
-            list_actions = [
-                {
-                    "action": _("Kanban Settings"),
-                    "attrs": f"""
+
+            # Timeline settings (your branch) — shown when layout is timeline
+            timeline_settings_action = None
+            if getattr(self, "timeline_url", None):
+                try:
+                    ts_base = str(reverse_lazy("horilla_generics:timeline_settings"))
+                    ts_params = [
+                        ("app_label", self.model_app_label),
+                        ("model", self.model_name),
+                        ("main_url", self.main_url or self.request.path),
+                    ]
+                    for key in self.request.GET:
+                        if key in ("app_label", "model", "main_url"):
+                            continue
+                        for value in self.request.GET.getlist(key):
+                            ts_params.append((key, value))
+                    timeline_settings_modal_url = ts_base + "?" + urlencode(ts_params)
+                    timeline_settings_action = {
+                        "action": _("Timeline settings"),
+                        "attrs": f"""
+                            hx-get="{timeline_settings_modal_url}"
+                            onclick="openModal()"
+                            hx-target="#modalBox"
+                            hx-swap="innerHTML"
+                            """,
+                    }
+                except Exception:
+                    pass
+
+            # Pull branch: layout-specific actions (kanban / group_by / list + quick filters)
+            kanban_settings_action = {
+                "action": _("Kanban Settings"),
+                "attrs": f"""
                     hx-get="{reverse_lazy('horilla_generics:create_kanban_group')}?model={self.model_name}&app_label={self.model_app_label}&exclude_fields={self.exclude_kanban_fields}&view_type=kanban"
                     onclick="openModal()"
                     hx-target="#modalBox"
                     hx-swap="innerHTML"
                     """,
-                },
-            ]
-            if getattr(self, "group_by_url", None):
-                list_actions.append(
-                    {
-                        "action": _("Group By Settings"),
-                        "attrs": f"""
-                        hx-get="{reverse_lazy('horilla_generics:create_kanban_group')}?model={self.model_name}&app_label={self.model_app_label}&exclude_fields={self.exclude_kanban_fields}&view_type=group_by"
-                        onclick="openModal()"
-                        hx-target="#modalBox"
-                        hx-swap="innerHTML"
-                        """,
-                    }
-                )
-            list_actions.append(
-                {
-                    "action": "Add Column to List",
-                    "attrs": f"""
-                        hx-get="{column_selector_url}"
-                        onclick="openModal()"
-                        hx-target="#modalBox"
-                        hx-swap="innerHTML"
-                        """,
-                }
-            )
-            actions.extend(list_actions)
+            }
+            group_by_settings_action = {
+                "action": _("Group By Settings"),
+                "attrs": f"""
+                    hx-get="{reverse_lazy('horilla_generics:create_kanban_group')}?model={self.model_name}&app_label={self.model_app_label}&exclude_fields={self.exclude_kanban_fields}&view_type=group_by"
+                    onclick="openModal()"
+                    hx-target="#modalBox"
+                    hx-swap="innerHTML"
+                    """,
+            }
+            add_column_action = {
+                "action": _("Add Column to List"),
+                "attrs": f"""
+                    hx-get="{column_selector_url}"
+                    onclick="openModal()"
+                    hx-target="#modalBox"
+                    hx-swap="innerHTML"
+                    """,
+            }
+            search_url = str(self.search_url) if self.search_url else self.request.path
+            add_quick_filter_action = {
+                "action": _("Add Quick Filter"),
+                "attrs": f"""
+                    hx-get="{search_url}?show_add_quick_filter=true"
+                    onclick="openModal()"
+                    hx-target="#modalBox"
+                    hx-swap="innerHTML"
+                    """,
+            }
 
-            # Add Quick Filter action if enabled
-            if self.enable_quick_filters:
-                search_url = (
-                    str(self.search_url) if self.search_url else self.request.path
-                )
-                actions.append(
-                    {
-                        "action": _("Add Quick Filter"),
-                        "attrs": f"""
-                        hx-get="{search_url}?show_add_quick_filter=true"
-                        onclick="openModal()"
-                        hx-target="#modalBox"
-                        hx-swap="innerHTML"
-                        """,
-                    }
-                )
+            if layout == "kanban":
+                actions.append(kanban_settings_action)
+            elif layout == "group_by" and getattr(self, "group_by_url", None):
+                actions.append(group_by_settings_action)
+            elif layout == "timeline" and timeline_settings_action:
+                actions.append(timeline_settings_action)
+            elif layout == "list":
+                actions.append(add_column_action)
+                if self.enable_quick_filters:
+                    actions.append(add_quick_filter_action)
         return actions

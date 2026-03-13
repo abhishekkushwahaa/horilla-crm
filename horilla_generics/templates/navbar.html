@@ -54,24 +54,30 @@
         {% if pinned_view and pinned_view.view_type == view_type %}
           <button
             id="rotateBtn"
+            type="button"
+            title="{% trans 'Unpin default view' %}"
+            aria-label="{% trans 'Unpin default view' %}"
             class="rotate-[40deg] hidden sm:block"
             hx-post="{% url 'horilla_generics:pin_view' %}"
             hx-vals='{"view_type": "{{ view_type }}", "model_name": "{{ model_name|escapejs }}","unpin": "true"}'
             hx-target="#rotateBtn"
             hx-select="#rotateBtn"
             hx-swap="outerHTML">
-            <img id="pinIcon" src="{% static 'assets/icons/pin.svg' %}" alt="{% trans 'Pin' %}" width="18" class="transition-transform duration-300" />
+            <img id="pinIcon" src="{% static 'assets/icons/pin.svg' %}" alt="{% trans 'Unpin' %}" width="18" class="transition-transform duration-300" />
           </button>
         {% else %}
           <button
             id="rotateBtn"
+            type="button"
+            title="{% trans 'Set as default view' %}"
+            aria-label="{% trans 'Set as default view' %}"
             class=" hidden sm:block"
             hx-post="{% url 'horilla_generics:pin_view' %}"
             hx-vals='{"view_type": "{{ view_type }}", "model_name": "{{ model_name|escapejs }}"}'
             hx-target="#rotateBtn"
             hx-select="#rotateBtn"
             hx-swap="outerHTML">
-            <img id="pinIcon" src="{% static 'assets/icons/pin.svg' %}" alt="{% trans 'Pin' %}" width="18" class="transition-transform duration-300" />
+            <img id="pinIcon" src="{% static 'assets/icons/pin.svg' %}" alt="{% trans 'Pin as default' %}" width="18" class="transition-transform duration-300" />
           </button>
         {% endif %}
       {% endif %}
@@ -103,9 +109,11 @@
       <div class="flex items-center gap-1">
         {% if reload_option %}
           <div class="flex items-center">
-            <button onclick="htmx.trigger('#reloadButton', 'click')"
+            <button type="button"
+              onclick="htmx.trigger('#reloadButton', 'click')"
+              title="{% trans 'Reload' %}"
               class="bg-[#f3f4f6] w-6 h-6 md:w-10 md:h-10 flex items-center justify-center rounded transition duration-300 cursor-pointer">
-              <img src="{% static 'assets/icons/l5.svg' %}" alt="{% trans 'Reload' %}" width="17" />
+              <img src="{% static 'assets/icons/l5.svg' %}" alt="" width="17" />
             </button>
           </div>
         {% endif %}
@@ -135,7 +143,7 @@
               }, 300);
             }
           ">
-            <button class="filtermenu">
+            <button class="filtermenu" title="{% trans 'Filter' %}">
               <img src="{% static 'assets/icons/l4.svg' %}" alt="{% trans 'Filter' %}" width="14" />
             </button>
           </div>
@@ -146,12 +154,22 @@
               type="button"
               data-dropdown-toggle="layoutDropdown"
               class="w-full h-full flex items-center justify-center gap-0.5"
+              title="{% trans 'Views' %}"
+              aria-label="{% trans 'Views' %}"
               aria-expanded="false"
               aria-haspopup="true">
               {% if effective_layout == 'kanban' %}
                 <img src="{% static 'assets/icons/l2.svg' %}" alt="{% trans 'Layout' %}" width="14" />
               {% elif effective_layout == 'group_by' %}
                 <img src="{% static 'assets/icons/group-by.svg' %}" alt="{% trans 'Layout' %}" width="14" />
+              {% elif effective_layout == 'card' %}
+                <img src="{% static 'assets/icons/card-view.svg' %}" alt="{% trans 'Layout' %}" width="14"/>
+              {% elif effective_layout == 'timeline' %}
+                <img src="{% static 'assets/icons/timeline.svg' %}" alt="{% trans 'Layout' %}" width="18"/>
+              {% elif effective_layout == 'split_view' %}
+                <img src="{% static 'assets/icons/split-view.svg' %}" alt="{% trans 'Split View' %}" width="14" />
+              {% elif effective_layout == 'chart' %}
+                <img src="{% static 'assets/icons/pie-chart-view.svg' %}" alt="{% trans 'Chart' %}" width="14" />
               {% else %}
                 <img src="{% static 'assets/icons/l3.svg' %}" alt="{% trans 'Layout' %}" width="14" />
               {% endif %}
@@ -161,7 +179,7 @@
               <ul class="text-sm" aria-labelledby="layoutDropdownButton">
                 <li>
                   <button type="button"
-                    class="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout != 'kanban' and effective_layout != 'group_by' %}text-primary-600 bg-primary-50{% endif %}"
+                    class="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout == 'list' %}text-primary-600 bg-primary-50{% endif %}"
                     hx-get="{{ main_url }}?{% for key, value in request.GET.items %}{% if key != 'layout' and key != 'remove_filter' %}{{ key }}={{ value }}&{% endif %}{% endfor %}layout=list"
                     hx-target="#mainSession"
                     hx-select="#mainSession"
@@ -173,6 +191,22 @@
                     {% trans "List" %}
                   </button>
                 </li>
+                {% if card_url %}
+                <li>
+                  <button type="button" id="cardViewBtn"
+                    class="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout == 'card' %}text-primary-600 bg-primary-50{% endif %}"
+                    hx-get="{{ main_url }}?{% for key, value in request.GET.items %}{% if key != 'layout' and key != 'remove_filter' %}{{ key }}={{ value }}&{% endif %}{% endfor %}layout=card"
+                    hx-target="#mainSession"
+                    hx-select="#mainSession"
+                    hx-swap="outerHTML"
+                    hx-select-oob="#navBar"
+                    hx-include="[name='search']"
+                    hx-push-url="true">
+                    <img src="{% static 'assets/icons/card-view.svg' %}" alt="" width="16" />
+                    {% trans "Card" %}
+                  </button>
+                </li>
+                {% endif %}
                 {% if kanban_url %}
                 <li>
                   <button type="button" id="kanbanBtn"
@@ -189,10 +223,26 @@
                   </button>
                 </li>
                 {% endif %}
+                {% if timeline_url %}
+                <li>
+                  <button type="button" id="timelineBtn"
+                    class="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout == 'timeline' %}text-primary-600 bg-primary-50{% endif %}"
+                    hx-get="{{ main_url }}?{% for key, value in request.GET.items %}{% if key != 'layout' and key != 'remove_filter' %}{{ key }}={{ value }}&{% endif %}{% endfor %}layout=timeline"
+                    hx-target="#mainSession"
+                    hx-select="#mainSession"
+                    hx-swap="outerHTML"
+                    hx-select-oob="#navBar"
+                    hx-include="[name='search']"
+                    hx-push-url="true">
+                    <img src="{% static 'assets/icons/timeline.svg' %}" alt="" width="18" />
+                    {% trans "Timeline" %}
+                  </button>
+                </li>
+                {% endif %}
                 {% if group_by_url %}
                 <li>
                   <button type="button" id="groupByBtn"
-                    class="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout == 'group_by' %}text-primary-600 bg-primary-50{% endif %}"
+                    class="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout == 'group_by' %}text-primary-600 bg-primary-50{% endif %}"
                     hx-get="{{ main_url }}?{% for key, value in request.GET.items %}{% if key != 'layout' and key != 'remove_filter' %}{{ key }}={{ value }}&{% endif %}{% endfor %}layout=group_by"
                     hx-target="#mainSession"
                     hx-select="#mainSession"
@@ -205,6 +255,37 @@
                   </button>
                 </li>
                 {% endif %}
+                {% if chart_url %}
+                <li>
+                  <button type="button" id="chartViewBtn"
+                    class="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout == 'chart' %}text-primary-600 bg-primary-50{% endif %}"
+                    hx-get="{{ chart_url }}?{% for key, value in request.GET.items %}{% if key != 'layout' and key != 'remove_filter' %}{{ key }}={{ value }}&{% endif %}{% endfor %}layout=chart"
+                    hx-target="#mainSession"
+                    hx-swap="innerHTML"
+                    hx-select-oob="#navBar"
+                    hx-include="[name='search']"
+                    hx-push-url="true">
+                    <img src="{% static 'assets/icons/pie-chart-view.svg' %}" alt="" width="16" />
+                    {% trans "Chart View" %}
+                  </button>
+                </li>
+                {% endif %}
+                {% if split_view_url %}
+                <li>
+                  <button type="button" id="splitViewBtn"
+                    class="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-gray-50 hover:text-primary-600 transition duration-300 text-sm {% if effective_layout == 'split_view' %}text-primary-600 bg-primary-50{% endif %}"
+                    hx-get="{{ main_url }}?{% for key, value in request.GET.items %}{% if key != 'layout' and key != 'remove_filter' %}{{ key }}={{ value }}&{% endif %}{% endfor %}layout=split_view"
+                    hx-target="#mainSession"
+                    hx-select="#mainSession"
+                    hx-swap="outerHTML"
+                    hx-select-oob="#navBar"
+                    hx-include="[name='search']"
+                    hx-push-url="true">
+                    <img src="{% static 'assets/icons/split-view.svg' %}" alt="" width="16" />
+                    {% trans "Split View" %}
+                  </button>
+                </li>
+                {% endif %}
               </ul>
             </div>
           </div>
@@ -213,6 +294,7 @@
           {% if actions and enable_actions %}
             <div class="bg-[#f3f4f6] w-6 h-6 md:w-10 md:h-10 flex items-center justify-center rounded transition duration-300 cursor-pointer">
               <button
+                title="{% trans 'Actions' %}"
                 id="dropdownDefaultButton"
                 data-dropdown-toggle="dropdown"
                 type="button">
