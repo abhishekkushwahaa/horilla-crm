@@ -559,6 +559,7 @@ class FiscalYearService:
                     next_fy.is_current = True
                     next_fy.save()
                     results["updated"].append(next_fy)
+                    current_fy = next_fy
                 else:
                     # Create next fiscal year if it doesn't exist (year has changed)
                     new_fy = FiscalYearService.create_next_fiscal_year_instance(
@@ -573,6 +574,7 @@ class FiscalYearService:
                         new_fy.save()
                         results["created"].append(new_fy)
                         results["updated"].append(new_fy)
+                        current_fy = new_fy
 
             # Always ensure next fiscal year exists (create in advance for planning)
             # This allows users to view and plan for the next fiscal year at any time
@@ -588,7 +590,60 @@ class FiscalYearService:
                 if new_fy:
                     results["created"].append(new_fy)
 
+            # After ensuring fiscal years are correct, update Quarter/Period is_current flags
+            if current_fy and config.company:
+                FiscalYearService._update_current_quarter_and_period(
+                    config.company, current_fy, current_date
+                )
+
         return results
+
+    @staticmethod
+    def _update_current_quarter_and_period(company, fiscal_year_instance, current_date):
+        """
+        Ensure that Quarter.is_current and Period.is_current reflect the given date.
+
+        This is used by check_and_update_fiscal_years so that templates relying on
+        is_current (e.g. forecast views) always see an up-to-date "current" flag.
+        """
+        Quarter = apps.get_model("horilla_core", "Quarter")
+        Period = apps.get_model("horilla_core", "Period")
+
+        # Update current quarter within this fiscal year
+        quarters_qs = Quarter.objects.filter(
+            company=company, fiscal_year=fiscal_year_instance
+        )
+
+        current_quarter = quarters_qs.filter(
+            start_date__lte=current_date, end_date__gte=current_date
+        ).first()
+
+        if current_quarter:
+            # Mark only this quarter as current
+            quarters_qs.exclude(id=current_quarter.id).update(is_current=False)
+            if not current_quarter.is_current:
+                current_quarter.is_current = True
+                current_quarter.save(update_fields=["is_current"])
+        else:
+            # No matching quarter – clear flags for safety
+            quarters_qs.update(is_current=False)
+
+        # Update current period across all quarters in this fiscal year
+        periods_qs = Period.objects.filter(
+            company=company, quarter__fiscal_year=fiscal_year_instance
+        )
+
+        current_period = periods_qs.filter(
+            start_date__lte=current_date, end_date__gte=current_date
+        ).first()
+
+        if current_period:
+            periods_qs.exclude(id=current_period.id).update(is_current=False)
+            if not current_period.is_current:
+                current_period.is_current = True
+                current_period.save(update_fields=["is_current"])
+        else:
+            periods_qs.update(is_current=False)
 
     @staticmethod
     def create_next_fiscal_year_instance(config, current_end_date):
