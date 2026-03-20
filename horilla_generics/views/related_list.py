@@ -479,7 +479,7 @@ class HorillaRelatedListSectionView(DetailView):
         list_view.view_id = f"{view_id}-content" if view_id else None
         list_view.main_url = self.request.path
         list_view.search_url = self.request.path
-        list_view.table_height_as_class = "h-[calc(_100vh_-_500px_)]"
+        list_view.table_height_as_class = "h-[calc(_100vh_-_520px_)]"
         list_view.owner_filtration = False
         return list_view
 

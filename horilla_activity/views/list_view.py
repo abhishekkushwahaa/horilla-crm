@@ -142,7 +142,7 @@ class TaskListView(LoginRequiredMixin, HorillaListView):
     paginate_by = 5
     table_class = False
     table_width = False
-    table_height_as_class = "h-[calc(_100vh_-_500px_)]"
+    table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False
 
     columns = [
@@ -269,7 +269,7 @@ class MeetingListView(HorillaListView):
     bulk_select_option = False
     table_class = False
     table_width = False
-    table_height_as_class = "h-[calc(_100vh_-_500px_)]"
+    table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False
 
     columns = [
@@ -398,7 +398,7 @@ class CallListView(HorillaListView):
     paginate_by = 10
     bulk_select_option = False
     table_class = False
-    table_height_as_class = "h-[calc(_100vh_-_500px_)]"
+    table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     table_width = False
     list_column_visibility = False
 
@@ -527,7 +527,7 @@ class EmailListView(HorillaListView):
     paginate_by = 10
     table_class = False
     table_width = False
-    table_height_as_class = "h-[calc(_100vh_-_500px_)]"
+    table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False
 
     columns = [
@@ -709,7 +709,7 @@ class EventListView(HorillaListView):
     paginate_by = 10
     table_class = False
     table_width = False
-    table_height_as_class = "h-[calc(_100vh_-_500px_)]"
+    table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False
 
     columns = [
