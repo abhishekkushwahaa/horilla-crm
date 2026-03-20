@@ -96,6 +96,7 @@
             hx-trigger="keyup changed delay:500ms, search"
             hx-target="#mainSession"
             hx-select="#mainSession"
+            hx-select-oob="#navBar"
             hx-swap="outerHTML"
             hx-preserve="true"
             hx-push-url={{ search_push_url }}
@@ -120,11 +121,12 @@
         {% if filter_option %}
           <div
             id="filterToggleWrapper"
-            class="bg-[#f3f4f6] w-6 h-6 md:w-10 md:h-10 flex items-center justify-center rounded transition duration-300 cursor-pointer"
+            class="relative bg-[#f3f4f6] w-6 h-6 md:w-10 md:h-10 flex items-center justify-center rounded transition duration-300 cursor-pointer"
             hx-on:click="
             const filterPanel = document.getElementById('filterpanel');
             const filterContainer = document.getElementById('filtercontainer');
             const wrapper = document.getElementById('filterToggleWrapper');
+            const storageKey = 'filterPanelVisible:' + window.location.pathname;
 
             if (filterPanel.classList.contains('hidden')) {
               // Open filter panel
@@ -133,11 +135,14 @@
               void filterPanel.offsetHeight; // reflow
               filterPanel.classList.add('visible');
               filterContainer.classList.add('visible');
+              // When opening, clear any persisted 'closed' state so server defaults apply
+              try { localStorage.removeItem(storageKey); } catch (e) {}
 
             } else {
               // Close filter panel
               filterPanel.classList.remove('visible');
               filterContainer.classList.remove('visible');
+              try { localStorage.setItem(storageKey, 'closed'); } catch (e) {}
               setTimeout(() => {
                 filterPanel.classList.add('hidden');
               }, 300);
@@ -146,6 +151,9 @@
             <button class="filtermenu" title="{% trans 'Filter' %}">
               <img src="{% static 'assets/icons/l4.svg' %}" alt="{% trans 'Filter' %}" width="14" />
             </button>
+            {% if applied_filter_count %}
+            <span class="filter-count-badge absolute -top-2 -right-2 lg:-top-1 lg:-right-1 bg-red-500 text-white text-[10px] leading-none rounded-full min-w-[16px] h-4 flex items-center justify-center font-medium pt-0.5" aria-label="{% trans 'Applied filters' %}: {{ applied_filter_count }}">{{ applied_filter_count }}</span>
+            {% endif %}
           </div>
         {% endif %}
         {% if not show_list_only and not one_view_only %}

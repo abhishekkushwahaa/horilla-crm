@@ -205,20 +205,108 @@
   border: 2px dashed #4a90e2;
 }
 
-#filterpanel {
-  max-height: 0;
-  /* overflow: hidden; */
-  margin-bottom: 0;
-  opacity: 0;
-  transition: max-height 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
+/* Wrapper so the filter panel takes zero layout space */
+.filter-panel-slot {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  display: block;
 }
 
-#filterpanel.visible {
-  max-height: 300px;
-  /* Adjust this value based on your content height */
+/* Floating filter panel — right side, below navbar, movable */
+.filter-panel-floating {
+  position: fixed;
+  top: 10.5rem;  /* default: below main header + navbar */
+  right: 1.25rem;
+  left: auto;
+  width: 26rem;
+  max-width: calc(100vw - 2.5rem);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-0.5rem);
+  transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+}
+
+.filter-panel-floating.filter-panel-dragging,
+.filter-panel-floating.filter-panel-resizing {
+  transition: none;
+}
+
+/* Preset sizes for quick min/max controls */
+.filter-panel-floating.filter-panel-max {
+  left: auto;
+  right: 1.25rem;
+  width: 52rem;
+  max-width: calc(100vw - 12rem);
+}
+
+.filter-panel-floating.filter-panel-min {
+  left: auto;
+  right: 1.25rem;
+  width: 24rem;
+}
+
+/* Settings page: panel needs to sit lower because of extra header spacing */
+.settings-page #filterpanel.filter-panel-floating {
+  top: 13.25rem;
+}
+
+.filter-panel-inner {
+  min-height: 0;
+  max-height: calc(100vh - 12rem); /* keep panel inside viewport */
+}
+
+/* Make the main body area scroll when content exceeds available height */
+.filter-panel-inner > .p-4 {
+  max-height: calc(100vh - 12rem - 2.5rem); /* subtract header height */
+  overflow-y: auto;
+}
+
+/* Resize handles — drag to change width/height */
+.filter-panel-resize-w {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 5;
+}
+.filter-panel-resize-w:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+.filter-panel-resize-w-left {
+  right: auto;
+  left: 0;
+}
+
+.filter-panel-resize-h {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  cursor: ns-resize;
+  z-index: 5;
+}
+.filter-panel-resize-h:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+#filterpanel.hidden.filter-panel-floating {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-0.5rem);
+}
+
+#filterpanel.visible.filter-panel-floating {
   opacity: 1;
-  margin-bottom: 1.25rem;
-  /* This is mb-5 (5 * 0.25rem = 1.25rem) */
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .select2-container {

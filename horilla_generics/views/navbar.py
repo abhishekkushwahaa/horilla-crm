@@ -166,6 +166,16 @@ class HorillaNavView(TemplateView):
         context["recently_viewed_option"] = self.recently_viewed_option
         context["all_view_types"] = self.all_view_types
         context["filter_option"] = self.filter_option
+        applied_filter_count = 0
+        if self.filter_option:
+            fields = self.request.GET.getlist("field") or []
+            operators = self.request.GET.getlist("operator") or []
+            for i, field in enumerate(fields):
+                if field and (operators[i] if i < len(operators) else None):
+                    applied_filter_count += 1
+            if self.request.GET.get("search"):
+                applied_filter_count += 1
+        context["applied_filter_count"] = applied_filter_count
         context["one_view_only"] = self.one_view_only
         context["reload_option"] = self.reload_option
         context["search_option"] = self.search_option

@@ -1216,6 +1216,280 @@ window.reinitializeSelect2 = function () {
     safeInitializeSelect2();
 };
 
+function initFilterPanelDrag() {
+    var panel = document.getElementById("filterpanel");
+    var handle = panel && panel.querySelector(".filter-panel-drag-handle");
+    if (!panel || !handle) return;
+
+    // Setup drag tooltip: show on header, but not when hovering action icons
+    var dragTitle = handle.getAttribute("data-drag-title");
+    if (dragTitle) {
+        handle.setAttribute("title", dragTitle);
+        var iconButtons = handle.querySelectorAll("#filterPanelMinBtn, #filterPanelMaxBtn, .filter-panel-close");
+        iconButtons.forEach(function (btn) {
+            btn.addEventListener("mouseenter", function () {
+                handle.removeAttribute("title");
+            });
+            btn.addEventListener("mouseleave", function () {
+                handle.setAttribute("title", dragTitle);
+            });
+        });
+    }
+
+    var startX, startY, isDragging = false;
+
+    function onMouseMove(e) {
+        if (!isDragging) return;
+        panel.style.left = (e.clientX - startX) + "px";
+        panel.style.top = (e.clientY - startY) + "px";
+    }
+
+    function onMouseUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        panel.classList.remove("filter-panel-dragging");
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    handle.addEventListener("mousedown", function (e) {
+        if (e.button !== 0 || e.target.closest("button")) return;
+        e.preventDefault();
+        var rect = panel.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        panel.classList.add("filter-panel-dragging");
+        panel.style.left = rect.left + "px";
+        panel.style.top = rect.top + "px";
+        panel.style.right = "auto";
+        panel.style.width = rect.width + "px";
+        isDragging = true;
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    });
+}
+
+var FILTER_PANEL_MIN_W = 288;
+var FILTER_PANEL_MIN_H = 192;
+var FILTER_PANEL_MAX_H = 0.85 * (typeof window !== "undefined" ? window.innerHeight : 800);
+
+function applyFilterPanelVisibilityPreference() {
+    if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+    var panel = document.getElementById("filterpanel");
+    var container = document.getElementById("filtercontainer");
+    if (!panel || !container) return;
+
+    var storageKey = "filterPanelVisible:" + window.location.pathname;
+    var stored;
+    try {
+        stored = localStorage.getItem(storageKey);
+    } catch (e) {
+        stored = null;
+    }
+
+    if (stored === "closed") {
+        panel.classList.remove("visible");
+        container.classList.remove("visible");
+        panel.classList.add("hidden");
+    }
+}
+
+window.applyFilterPanelVisibilityPreference = applyFilterPanelVisibilityPreference;
+
+function initFilterPanelResize() {
+    var panel = document.getElementById("filterpanel");
+    if (!panel) return;
+    var resizeWRight = panel.querySelector(".filter-panel-resize-w:not(.filter-panel-resize-w-left)");
+    var resizeWLeft = panel.querySelector(".filter-panel-resize-w-left");
+    var resizeH = panel.querySelector(".filter-panel-resize-h");
+    if (!resizeWRight && !resizeWLeft && !resizeH) return;
+
+    function getMaxH() { return 0.85 * window.innerHeight; }
+
+    if (resizeWRight) {
+        resizeWRight.addEventListener("mousedown", function (e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            var rect = panel.getBoundingClientRect();
+            var startX = e.clientX;
+            var startW = rect.width;
+            var maxW = window.innerWidth - rect.left - 20;
+
+            panel.style.left = rect.left + "px";
+            panel.style.right = "auto";
+
+            function onMove(e) {
+                var dx = e.clientX - startX;
+                var newW = Math.max(FILTER_PANEL_MIN_W, Math.min(maxW, startW + dx));
+                panel.style.width = newW + "px";
+            }
+            function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                panel.classList.remove("filter-panel-resizing");
+                if (window.updateFilterPanelSizeButtons) {
+                    window.updateFilterPanelSizeButtons(panel);
+                }
+            }
+            panel.classList.add("filter-panel-resizing");
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
+    }
+
+    if (resizeWLeft) {
+        resizeWLeft.addEventListener("mousedown", function (e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            var rect = panel.getBoundingClientRect();
+            var startX = e.clientX;
+            var startW = rect.width;
+            var rightEdge = rect.right;
+            var maxW = rightEdge - 20;
+
+            panel.style.right = (window.innerWidth - rightEdge) + "px";
+            panel.style.left = "auto";
+
+            function onMove(e) {
+                var dx = startX - e.clientX;
+                var newW = Math.max(FILTER_PANEL_MIN_W, Math.min(maxW, startW + dx));
+                panel.style.width = newW + "px";
+            }
+            function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                panel.classList.remove("filter-panel-resizing");
+                if (window.updateFilterPanelSizeButtons) {
+                    window.updateFilterPanelSizeButtons(panel);
+                }
+            }
+            panel.classList.add("filter-panel-resizing");
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
+    }
+
+    if (resizeH) {
+        resizeH.addEventListener("mousedown", function (e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            var rect = panel.getBoundingClientRect();
+            var startY = e.clientY;
+            var startH = rect.height;
+
+            function onMove(e) {
+                var dy = e.clientY - startY;
+                var newH = Math.max(FILTER_PANEL_MIN_H, Math.min(getMaxH(), startH + dy));
+                panel.style.height = newH + "px";
+            }
+            function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                panel.classList.remove("filter-panel-resizing");
+                if (window.updateFilterPanelSizeButtons) {
+                    window.updateFilterPanelSizeButtons(panel);
+                }
+            }
+            panel.classList.add("filter-panel-resizing");
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
+    }
+}
+
+function initFilterPanelSizeControls() {
+    var panel = document.getElementById("filterpanel");
+    if (!panel) return;
+    var minBtn = document.getElementById("filterPanelMinBtn");
+    var maxBtn = document.getElementById("filterPanelMaxBtn");
+    if (!minBtn && !maxBtn) return;
+
+    var STORAGE_KEY = "filterPanelSizeMode";
+
+    function updateButtonsFor(panelEl, opts) {
+        var el = panelEl || panel;
+        if (!el) return;
+
+        var fromClick = opts && opts.fromClick;
+        var isNowMax;
+
+        if (fromClick) {
+            // When called from explicit min/max buttons, trust the classes they just set
+            isNowMax = el.classList.contains("filter-panel-max");
+        } else {
+            // When called from drag/resize, decide based on actual width
+            var rect = el.getBoundingClientRect();
+            var width = rect.width || 0;
+            var baseMin = (typeof FILTER_PANEL_MIN_W !== "undefined" ? FILTER_PANEL_MIN_W : 288);
+            var threshold = baseMin + 40; // a bit wider than min
+            isNowMax = width > threshold;
+            el.classList.toggle("filter-panel-max", isNowMax);
+            el.classList.toggle("filter-panel-min", !isNowMax);
+        }
+
+        // Persist mode so HTMX reloads and page refreshes keep current size
+        try {
+            localStorage.setItem(STORAGE_KEY, isNowMax ? "max" : "min");
+        } catch (e) {
+            // ignore storage issues
+        }
+
+        var isMax = isNowMax;
+
+        if (minBtn) {
+            // Show shrink only when currently in a "max" (wider) state
+            minBtn.style.display = isMax ? "inline-flex" : "none";
+        }
+        if (maxBtn) {
+            // Show expand when not already maximized
+            maxBtn.style.display = isMax ? "none" : "inline-flex";
+        }
+    }
+
+    // Expose so resize handlers can call it
+    window.updateFilterPanelSizeButtons = updateButtonsFor;
+
+    // Initial state: restore last mode from storage (default: min)
+    var savedMode = null;
+    try {
+        savedMode = localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+        savedMode = null;
+    }
+
+    if (savedMode === "max") {
+        panel.classList.add("filter-panel-max");
+        panel.classList.remove("filter-panel-min");
+    } else {
+        panel.classList.add("filter-panel-min");
+        panel.classList.remove("filter-panel-max");
+    }
+    updateButtonsFor(panel, { fromClick: true });
+
+    if (minBtn) {
+        minBtn.onclick = function (e) {
+            e.stopPropagation();
+            panel.classList.remove("filter-panel-max");
+            panel.classList.add("filter-panel-min");
+            // Reset inline sizing so CSS min preset takes effect
+            panel.style.width = "";
+            panel.style.height = "";
+            updateButtonsFor(panel, { fromClick: true });
+        };
+    }
+
+    if (maxBtn) {
+        maxBtn.onclick = function (e) {
+            e.stopPropagation();
+            panel.classList.remove("filter-panel-min");
+            panel.classList.add("filter-panel-max");
+            panel.style.width = "";
+            panel.style.height = "";
+            updateButtonsFor(panel, { fromClick: true });
+        };
+    }
+}
+
 // Document Ready
 $(document).ready(function () {
     // Initialize components
@@ -1275,6 +1549,13 @@ $(document).ready(function () {
         });
     });
 
+    // Filter panel helpers
+    // Respect saved visibility (open/closed) state across reloads
+    applyFilterPanelVisibilityPreference();
+    initFilterPanelDrag();
+    initFilterPanelResize();
+    initFilterPanelSizeControls();
+
     // Event Listeners
     $(".filtermenu").on("click", function () {
         $("#filterpanel").toggleClass("hidden visible");
@@ -1283,6 +1564,9 @@ $(document).ready(function () {
     $(".closebtn").on("click", function () {
         $("#filterpanel").removeClass("visible").addClass("hidden");
     });
+
+    initFilterPanelDrag();
+    initFilterPanelResize();
 
     $("#tableBtn").on("click", function () {
         $("[id^='tableview']").removeClass("hidden");
@@ -1504,6 +1788,13 @@ document.body.addEventListener("htmx:afterSettle", function (event) {
         SidebarManager.setActiveNavLink($sectionLink, currentSection);
     }
     SidebarManager.activateFirstSubsectionItem(currentSection);
+
+    if (event.detail && (event.detail.target.id === "mainSession" || event.detail.target.querySelector("#filterpanel"))) {
+        applyFilterPanelVisibilityPreference();
+        initFilterPanelDrag();
+        initFilterPanelResize();
+        initFilterPanelSizeControls();
+    }
 
     // Reinitialize Select2 after HTMX content loads
     var target = $(event.target);
