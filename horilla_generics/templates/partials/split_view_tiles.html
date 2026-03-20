@@ -11,8 +11,11 @@
     {% endwith %}
 {% endif %}
 {% endwith %}
-<div class="split-view-tile py-3 px-4 transition-colors cursor-pointer hover:bg-primary-50"
-     data-id="{{ data.id }}"
+<div class="split-view-tile py-3 px-4 cursor-pointer group
+    transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+    hover:bg-primary-50 hover:translate-x-1.5 hover:shadow-sm
+    active:scale-[0.98]"
+    data-id="{{ data.id }}"
     {% with first_cell=columns|first %}
     {% if first_cell %}
         {% with col_attrs_for_field=col_attrs|lookup:first_cell.1 %}

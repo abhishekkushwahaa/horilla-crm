@@ -11,7 +11,8 @@
         {% endwith %}
     {% endif %}
     {% endwith %}
-    <div class="card-item p-[20px] rounded-[5px] text-sm relative bg-white mb-2 [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] min-w-0">
+    <div
+        class="card-item p-[20px] rounded-[5px] text-sm relative bg-white mb-2 [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] min-w-0 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
         {% if visible_actions %}
             {% filter_actions_by_permission visible_actions data as allowed_actions %}
             {% if allowed_actions %}
@@ -40,8 +41,10 @@
 
         {% with first_cell=columns|first %}
         <div class="flex gap-3 mb-3 pb-3 border-b border-b-[#565e6c13]">
-            <div class="rounded-full w-10 h-10 overflow-hidden flex-shrink-0 bg-[#ffccbc]">
-                <img src="https://ui-avatars.com/api/?name={{ data|get_field:first_cell.1|default:data.id|urlencode }}&background=ffccbc&color=e54f38" alt="" class="rounded-full w-10 h-10 object-cover" loading="lazy" />
+            <div class="rounded-full w-10 h-10 overflow-hidden flex-shrink-0 bg-primary-500">
+                <div class="bg-primary-400 text-primary-600 w-full h-full flex items-center justify-center font-medium">
+                    {{ data|get_field:first_cell.1|default:data.id|shortname }}
+                </div>
             </div>
             <div class="flex-1 min-w-0 overflow-visible">
                 {% if first_cell %}

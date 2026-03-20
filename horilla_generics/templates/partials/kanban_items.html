@@ -5,7 +5,8 @@
 {% for item in group.items %}
     {% filter_actions_by_permission actions item as allowed_actions %}
 
-<div id="item-{{ item.pk }}" {% if item.can_drag %}draggable="true"{% else %}draggable="false"{% endif %} ondragstart="drag(event)">
+<div id="item-{{ item.pk }}" {% if item.can_drag %}draggable="true"{% else %}draggable="false"{% endif %} ondragstart="drag(event)"
+    class="transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
     <div class="p-[20px] rounded-[5px] text-sm relative bg-white mb-2">
 
         {% if allowed_actions %}
@@ -40,7 +41,9 @@
 
         <div class="flex gap-3 mb-3 pb-3 border-b border-b-[#565e6c13]">
             <div class="rounded-full w-10 h-10 overflow-hidden">
-                <img src="https://ui-avatars.com/api/?name={{item.display_columns.0.value|urlencode}}&background=ffccbc&color=e54f38" alt="{% trans 'Avatar' %}" class="rounded-full w-10 h-10 object-cover" loading="lazy" />
+                <div class="bg-primary-400 text-primary-600 w-full h-full flex items-center justify-center font-medium">
+                    {{item.display_columns.0.value|shortname}}
+                </div>
             </div>
 
             <div class="flex-1 min-w-0 overflow-visible">
