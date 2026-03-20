@@ -2,7 +2,9 @@
 
 # Standard library imports
 import json
+import random
 import tempfile
+from datetime import timedelta
 from pathlib import Path
 
 # Third-party imports (Django)
@@ -31,19 +33,26 @@ def set_sqlite_foreign_keys(enabled: bool):
 def inject_timestamps_into_fixture_data(data):
     """
     Inject current created_at and updated_at into fixture data so that
-    every loaded record gets current timestamps (loaddata does not run
-    model save(), so auto_now/auto_now_add are not applied).
+    every loaded record gets current timestamps
+    For records with close_date set close_date to
+    created_at + a random number of days (between 8 and 28).
     """
     if not isinstance(data, list):
         return data
-    now = timezone.now().isoformat()
+    now = timezone.now()
+    now_iso = now.isoformat()
     for item in data:
         if isinstance(item, dict) and "fields" in item:
             fields = item["fields"]
             if "created_at" in fields:
-                fields["created_at"] = now
+                fields["created_at"] = now_iso
             if "updated_at" in fields:
-                fields["updated_at"] = now
+                fields["updated_at"] = now_iso
+            if "close_date" in fields:
+                days_ahead = random.randint(8, 28)
+                fields["close_date"] = (
+                    (now + timedelta(days=days_ahead)).date().isoformat()
+                )
     return data
 
 
