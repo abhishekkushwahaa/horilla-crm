@@ -4,7 +4,6 @@
 {% block settings %}
 
 {% partialdef module_card %}
-<div class="module-card">
     <div class="module-header">
         <div
             style="
@@ -26,9 +25,7 @@
     <div class="module-description">
         {% trans module.description %}
     </div>
-</div>
 {% endpartialdef %}
-
 
 <div id="version-info-view">
     <div class="header">
@@ -37,8 +34,13 @@
     </div>
 
     <div class="">
-        <div class="core-module">
-            <div style="display: flex; gap: 20px; align-items:center;">
+        <div class="core-module version-info-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5" role="button" tabindex="0" title="{% trans 'View version details' %}"
+            hx-get="{% url 'horilla_core:version_info_view' %}?details=core"
+            hx-target="#contentModalBox"
+            hx-swap="innerHTML"
+            hx-trigger="click"
+            onclick="openContentModal()">
+            <div class="flex gap-5 items-center">
                 <div class="core-module-icon">
                     <img src="{% static core_module.icon %}" alt="{% trans 'Icon' %}">
                 </div>
@@ -46,16 +48,22 @@
                     <h2>{{ core_module.name }}</h2>
                     <p>{{ core_module.description }}</p>
                 </div>
-                </div>
+            </div>
             <div class="core-version">v{{ core_module.version }}</div>
         </div>
 
         <div class="custom-scroll overflow overflow-hidden overflow-y-auto h-[calc(_100vh_-_500px_)]">
             <div class="modules-grid">
                 {% for module in other_modules %}
+                <div class="module-card version-info-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5" role="button" tabindex="0" title="{% trans 'View version details' %}"
+                    hx-get="{% url 'horilla_core:version_info_view' %}?details={{ forloop.counter0 }}"
+                    hx-target="#contentModalBox"
+                    hx-swap="innerHTML"
+                    hx-trigger="click"
+                    hx-on::after-request="if(event.detail.successful){openContentModal()}">
                     {% partial module_card %}
-                {% endfor %}
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
