@@ -226,12 +226,15 @@ class HorillaModelForm(HorillaFormMixin, forms.ModelForm):
                             ]
                             initial_choices = []
                             try:
-                                queryset = related_model.objects.all()[:100]
+                                base_queryset = getattr(field, "queryset", None)
+                                if base_queryset is None:
+                                    base_queryset = related_model.objects.all()
+                                queryset = base_queryset[:100]
                                 initial_choices = [
                                     (obj.pk, str(obj)) for obj in queryset
                                 ]
                                 if all_values:
-                                    selected_objects = related_model.objects.filter(
+                                    selected_objects = base_queryset.filter(
                                         pk__in=all_values
                                     )
                                     initial_choices = [
