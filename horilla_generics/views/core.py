@@ -10,6 +10,7 @@ from typing import Any
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.utils.html import escapejs
@@ -45,6 +46,35 @@ class HorillaView(TemplateView):
     split_view_url: str = ""
     chart_url: str = ""
     nav_url: str = ""
+
+    def _validate_required_urls(self):
+        """Ensure nav_url and at least one view URL are configured in child class."""
+        nav_url = getattr(self, "nav_url", "") or ""
+        if not nav_url:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} must define a non-empty nav_url."
+            )
+
+        view_urls = {
+            "list_url": getattr(self, "list_url", "") or "",
+            "kanban_url": getattr(self, "kanban_url", "") or "",
+            "group_by_url": getattr(self, "group_by_url", "") or "",
+            "card_url": getattr(self, "card_url", "") or "",
+            "timeline_url": getattr(self, "timeline_url", "") or "",
+            "split_view_url": getattr(self, "split_view_url", "") or "",
+            "chart_url": getattr(self, "chart_url", "") or "",
+        }
+        if not any(view_urls.values()):
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} must define at least one non-empty view URL: "
+                "list_url, kanban_url, group_by_url, card_url, timeline_url, "
+                "split_view_url, or chart_url."
+            )
+
+    def dispatch(self, request, *args, **kwargs):
+        """Validate URL configuration before handling request."""
+        self._validate_required_urls()
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         """Add nav/list/kanban/group_by/card/split_view URLs and filter_form trigger to template context."""
