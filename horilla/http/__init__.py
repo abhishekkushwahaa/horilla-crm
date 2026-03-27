@@ -15,6 +15,7 @@ from django.http import (
     HttpResponseNotFound,
     HttpResponseNotAllowed,
     HttpResponseBadRequest,
+    StreamingHttpResponse,
 )
 
 from .url_safety import safe_url
@@ -34,4 +35,5 @@ __all__ = [
     "HttpResponseBadRequest",
     "RedirectResponse",
     "RefreshResponse",
+    "StreamingHttpResponse",
 ]
