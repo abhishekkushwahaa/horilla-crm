@@ -3,13 +3,13 @@
 {% load i18n %}
 
 <button id="detailViewReloadButton"  hidden hx-get="{{ request.path }}?{{request.GET.urlencode}}" hx-target="#detailViewContainer" hx-swap="outerHTML" hx-select="#detailViewContainer">click</button>
-<div class="modal-box mx-5 bg-white w-full max-w-md md:min-w-[700px] rounded-lg shadow-card p-0 transition-all duration-300 opacity-100 scale-100">
+<div class="modal-box mx-5 bg-white w-full max-w-md md:min-w-[700px] rounded-lg  p-0 transition-all duration-300 opacity-100 scale-100">
     <div class="p-5 pl-2" id="detailViewContainer">
 
         <!-- Modal Header -->
         <div class="flex justify-between items-center mb-2">
             <h2 class="text-md font-semibold" id="genericModalLabel">{{ title }}</h2>
-            <button onclick="closeDetailModal();$('#reloadButton').click();" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
+            <button onclick="closeDetailModal();" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
                 <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
             </button>
         </div>
@@ -37,14 +37,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5 mt-5">
             {% for col in body %}
                 {% if not col.2 %}
-                    <div class="mb-2 flex gap-5 items-center">
-                        <span class="font-medium text-xs text-[#565E6C] w-32">{{ col.0 }}</span>
-                        <p class="text-xs font-semibold flex items-center gap-5">
-                            : <span>{{ object|get_field:col.1|safe }}</span>
-                        </p>
+                    <div class="mb-2 flex items-start text-xs">
+                        <span class="font-medium text-[#565E6C] w-32 shrink-0">{{ col.0 }}</span>
+                        <span class="font-semibold w-4 shrink-0 text-center">:</span>
+                        <p class="font-semibold flex-1 break-words">{{ object|get_field:col.1|escape }}</p>
                     </div>
                 {% else %}
-                    {{ object|get_field:col.1|safe }}
+                    {{ object|get_field:col.1|escape }}
                 {% endif %}
             {% endfor %}
         </div>
@@ -71,7 +70,7 @@
                             </a>
                         {% endfor %}
                     {% else %}
-                        {{ object|get_field:action_method|safe }}
+                        {{ object|get_field:action_method|escape }}
                     {% endif %}
                 </div>
             {% endif %}
