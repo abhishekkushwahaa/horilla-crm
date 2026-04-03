@@ -99,7 +99,7 @@
                     $('#searchInput').val('');
                     try {
                       const storageKey = 'filterPanelVisible:' + window.location.pathname;
-                      localStorage.setItem(storageKey, 'closed');
+                      localStorage.removeItem(storageKey);
                     } catch (e) {}
                   ">{% trans 'Clear All' %}
            </button>
