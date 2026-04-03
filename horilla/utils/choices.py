@@ -126,6 +126,12 @@ OPERATOR_CHOICES = [
     ("between", _("Between")),
     ("isnull", _("Is empty")),
     ("isnotnull", _("Is not empty")),
+    ("icontains", _("Contains")),
+    ("ne", _("Not Equals")),
+    ("istartswith", _("Starts With")),
+    ("iendswith", _("Ends With")),
+    ("gte", _("Greater Than or Equal")),
+    ("lte", _("Less Than or Equal")),
 ]
 
 # IMPORTANT: Order matters — do not change the order of these lists
