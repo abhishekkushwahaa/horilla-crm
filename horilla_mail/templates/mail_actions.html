@@ -1,6 +1,5 @@
-{% load static %}
-{% load i18n %}
-{% load horilla_tags %}
+{% load static i18n horilla_tags %}
+
 <div class="flex rounded-md overflow-hidden">
     {% has_perm "horilla_mail.view_horillamailconfiguration" as can_view_horillamailconfiguration %}
     {% has_perm "horilla_mail.change_horillamailconfiguration" as can_change_horillamailconfiguration %}
