@@ -46,20 +46,10 @@ def _send_pending_review_notification(job, record):
         pass
 
 
-def _normalize_operator(operator):
-    return {
-        "exact": "equals",
-        "gt": "greater_than",
-        "lt": "less_than",
-        "isnull": "is_empty",
-        "isnotnull": "is_not_empty",
-    }.get((operator or "").strip(), (operator or "").strip())
-
-
 def evaluate_condition(instance, condition):
     """Evaluate a single condition against a record instance."""
     field_name = getattr(condition, "field", "")
-    operator = _normalize_operator(getattr(condition, "operator", ""))
+    operator = (getattr(condition, "operator", "") or "").strip()
     value = getattr(condition, "value", "")
     try:
         field = instance._meta.get_field(field_name)
@@ -75,56 +65,51 @@ def evaluate_condition(instance, condition):
     is_datetime = field_type == "DateTimeField"
 
     if is_date or is_datetime:
-        if operator == "is_empty":
+        if operator == "isnull":
             return raw_value is None
-        if operator == "is_not_empty":
+        if operator == "isnotnull":
             return raw_value is not None
         parser = parse_date if is_date else parse_datetime
-        if operator in ("equals", "greater_than", "less_than"):
+        if operator in ("exact", "gt", "lt"):
             parsed = parser(value)
             if parsed is None or raw_value is None:
-                return str(raw_value) == str(value) if operator == "equals" else False
-            if operator == "equals":
+                return str(raw_value) == str(value) if operator == "exact" else False
+            if operator == "exact":
                 return raw_value == parsed
-            if operator == "greater_than":
+            if operator == "gt":
                 return raw_value > parsed
             return raw_value < parsed
 
     left = "" if raw_value is None else str(raw_value)
     right = "" if value is None else str(value)
-    if operator == "equals":
+    if operator == "exact":
         return left == right
-    if operator == "not_equals":
+    if operator == "ne":
         return left != right
-    if operator == "contains":
+    if operator == "icontains":
         return right.lower() in left.lower()
     if operator == "not_contains":
         return right.lower() not in left.lower()
-    if operator == "starts_with":
+    if operator == "istartswith":
         return left.lower().startswith(right.lower())
-    if operator == "ends_with":
+    if operator == "iendswith":
         return left.lower().endswith(right.lower())
-    if operator in (
-        "greater_than",
-        "greater_than_equal",
-        "less_than",
-        "less_than_equal",
-    ):
+    if operator in ("gt", "gte", "lt", "lte"):
         try:
             left_dec = Decimal(left)
             right_dec = Decimal(right)
-            if operator == "greater_than":
+            if operator == "gt":
                 return left_dec > right_dec
-            if operator == "greater_than_equal":
+            if operator == "gte":
                 return left_dec >= right_dec
-            if operator == "less_than":
+            if operator == "lt":
                 return left_dec < right_dec
             return left_dec <= right_dec
         except Exception:
             return False
-    if operator == "is_empty":
+    if operator == "isnull":
         return not left.strip()
-    if operator == "is_not_empty":
+    if operator == "isnotnull":
         return bool(left.strip())
     return False
 
