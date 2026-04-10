@@ -157,6 +157,11 @@ urlpatterns = [
         name="approval_history_list_view",
     ),
     path(
+        "approval-history-delete/<int:pk>/",
+        views.ApprovalHistoryDeleteView.as_view(),
+        name="approval_history_delete_view",
+    ),
+    path(
         "approval-history-detail/<int:pk>/",
         views.ApprovalHistoryDetailView.as_view(),
         name="approval_history_detail_view",

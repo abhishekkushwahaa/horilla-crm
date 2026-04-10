@@ -45,6 +45,7 @@ from .jobs_detail_tabs import (  # noqa: F401
 from .history import (  # noqa: F401
     ApprovalHistoryNavbar,
     ApprovalHistoryListView,
+    ApprovalHistoryDeleteView,
     ApprovalHistoryDetailView,
     ApprovalHistoryResubmitView,
     ApprovalHistoryTaskStatusUpdateView,
@@ -85,6 +86,7 @@ __all__ = [
     # History
     "ApprovalHistoryNavbar",
     "ApprovalHistoryListView",
+    "ApprovalHistoryDeleteView",
     "ApprovalHistoryDetailView",
     "ApprovalHistoryResubmitView",
     "ApprovalHistoryTaskStatusUpdateView",

@@ -343,6 +343,13 @@ class ApprovalInstance(HorillaCoreModel):
             kwargs={"pk": self.pk},
         )
 
+    def get_delete_url(self):
+        """Return the URL for the approval history delete view."""
+        return reverse_lazy(
+            "approvals:approval_history_delete_view",
+            kwargs={"pk": self.pk},
+        )
+
 
 class ApprovalDecision(HorillaCoreModel):
     """A single approve/reject decision on a step."""
