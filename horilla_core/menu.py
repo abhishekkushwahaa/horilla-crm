@@ -262,3 +262,13 @@ class AboutSystemSettings:
             "perm": "horilla_core.view_recyclebin",
         }
     ]
+
+
+@settings_menu.register
+class IntegrationsSettings:
+    """Registers the Integrations section in the admin Settings sidebar."""
+
+    title = _("Integrations")
+    icon = "/assets/icons/integration.svg"
+    order = 4
+    items = []

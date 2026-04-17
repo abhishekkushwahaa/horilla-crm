@@ -7,18 +7,34 @@
   background-color: #d8f1ff;
   border: unset;
   display: block;
-  font-size: 0.75rem !important;
-  padding: 1px 5px;
+  font-size: 0.72rem !important;
+  padding: 1px 6px;
+  line-height: 1.2;
 }
 .fc-h-event .fc-event-title {
   color: #FFFFFF;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.66rem;
+  line-height: 1.2;
 }
 .fc .fc-daygrid-event {
-  margin: 3px !important;
+  margin: 1px 2px !important;
   border-radius: 50px !important;
-  padding: 3px 8px;
+  padding: 2px 7px;
+  min-height: 18px;
+}
+.fc .fc-daygrid-dot-event {
+  margin: 1px 2px !important;
+  border-radius: 50px !important;
+  padding: 2px 7px !important;
+  min-height: 18px;
+  display: block;
+}
+.fc .fc-daygrid-dot-event .fc-event-title,
+.fc .fc-daygrid-dot-event .fc-event-time {
+  font-size: 0.66rem;
+  line-height: 1.2;
+  font-weight: 600;
 }
 .fc .fc-col-header-cell-cushion {
   font-size: 0.9rem;
@@ -54,6 +70,12 @@
   box-shadow: rgb(0 0 0 / 8%) 0px 2px 20px;
   border-radius: 5px;
   border: unset !important;
+}
+/* Scroll long "more" lists instead of overflowing the viewport (Tailwind: h-[calc(100vh-520px)]) */
+.fc .fc-popover-body {
+  max-height: calc(100vh - 620px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .fc-theme-standard .fc-popover-header {
   background: #fff0ea;
