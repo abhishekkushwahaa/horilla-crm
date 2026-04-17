@@ -108,7 +108,7 @@
                     </div>
                     <div
                         id="task-list-content"
-                        class="text-[.8rem]"
+                        class="w-[calc(100vw-580px)] text-[.8rem]"
                         hx-get="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
                         hx-trigger="load"
                         hx-target="#task-list-content"
@@ -166,7 +166,7 @@
                     </div>
                     <div
                         id="meeting-list-content"
-                        class="text-[.8rem]"
+                        class="w-[calc(100vw-580px)] text-[.8rem]"
                         hx-get="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
                         hx-trigger="revealed"
                         hx-target="#meeting-list-content"
@@ -225,7 +225,7 @@
                     </div>
                     <div
                         id="call-list-content"
-                        class="text-[.8rem]"
+                        class="w-[calc(100vw-580px)] text-[.8rem]"
                         hx-get="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
                         hx-trigger="revealed"
                         hx-target="#call-list-content"
@@ -294,7 +294,7 @@
                     </div>
                     <div
                         id="email-list-content"
-                        class="text-[.8rem]"
+                        class="w-[calc(100vw-580px)] text-[.8rem]"
                         hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=sent&content_type_id={{ content_type_id }}"
                         hx-trigger="revealed"
                         hx-target="#email-list-content"
@@ -351,7 +351,7 @@
                     </div>
                     <div
                         id="event-list-content"
-                        class="text-[.8rem]"
+                        class="w-[calc(100vw-580px)] text-[.8rem]"
                         hx-get="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
                         hx-trigger="revealed"
                         hx-target="#event-list-content"
