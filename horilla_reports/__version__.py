@@ -2,13 +2,19 @@
 
 from horilla.utils.translation import gettext_lazy as _
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 __module_name__ = "Reports"
-__release_date__ = ""
+__release_date__ = "17 April 2026"
 __description__ = _(
     "Module for creating and customizing reports across all system modules."
 )
 __icon__ = "assets/icons/icon5.svg"
+
+__1_2_1__ = _(
+    "Improved report compatibility with dashboard multi-widget support, "
+    "enhanced chart_value_field handling, and minor stability improvements "
+    "for report rendering and filter processing."
+)
 
 __1_2_0__ = _(
     "Added support for advanced chart types including Treemap, Area charts, "

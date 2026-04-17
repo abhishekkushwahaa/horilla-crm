@@ -7,11 +7,17 @@ application registry and UI.
 
 from horilla.utils.translation import gettext_lazy as _
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __module_name__ = "Dashboards"
-__release_date__ = ""
+__release_date__ = "17 April 2026"
 __description__ = _("Module for building and customizing interactive dashboards.")
 __icon__ = "assets/icons/icon6.svg"
+
+__1_5_0__ = _(
+    "Extended dashboard generator to support multiple charts, multiple table "
+    "widgets, and custom KPI functions. Added more KPI widgets and improved "
+    "charts and reporting components for the leads dashboard."
+)
 
 __1_4_0__ = _(
     "Added configurable Y-axis metrics for charts reusing KPI options, plus new "
