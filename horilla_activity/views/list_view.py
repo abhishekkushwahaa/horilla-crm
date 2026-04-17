@@ -140,7 +140,6 @@ class TaskListView(LoginRequiredMixin, HorillaListView):
     model = Activity
     bulk_select_option = False
     paginate_by = 5
-    table_class = False
     table_width = False
     table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False
@@ -267,7 +266,6 @@ class MeetingListView(HorillaListView):
     model = Activity
     paginate_by = 10
     bulk_select_option = False
-    table_class = False
     table_width = False
     table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False
@@ -397,7 +395,6 @@ class CallListView(HorillaListView):
     model = Activity
     paginate_by = 10
     bulk_select_option = False
-    table_class = False
     table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     table_width = False
     list_column_visibility = False
@@ -525,7 +522,6 @@ class EmailListView(HorillaListView):
     model = HorillaMail
     bulk_select_option = False
     paginate_by = 10
-    table_class = False
     table_width = False
     table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False
@@ -707,7 +703,6 @@ class EventListView(HorillaListView):
     model = Activity
     bulk_select_option = False
     paginate_by = 10
-    table_class = False
     table_width = False
     table_height_as_class = "h-[calc(_100vh_-_520px_)]"
     list_column_visibility = False

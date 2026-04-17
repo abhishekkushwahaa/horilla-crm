@@ -475,7 +475,6 @@ class HorillaRelatedListSectionView(DetailView):
         list_view.bulk_select_option = False
         list_view.filterset_class = None
         list_view.table_width = False
-        list_view.table_class = False
         list_view.view_id = f"{view_id}-content" if view_id else None
         list_view.main_url = self.request.path
         list_view.search_url = self.request.path
