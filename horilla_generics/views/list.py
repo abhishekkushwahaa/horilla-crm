@@ -233,14 +233,33 @@ class HorillaListView(HorillaListViewMixin, ListView):
             )
             queryset = self.filterset.filter_queryset(queryset)
 
+        sort_keys_raw = self.request.GET.get("sort_keys", "")
         sort_field = self.request.GET.get("sort")
         sort_direction = self.request.GET.get("direction", self.default_sort_direction)
 
-        if view_type == "recently_viewed" and not sort_field and "pks" in locals():
+        # Parse multi-column sort_keys (e.g. "name:asc,date:desc")
+        sort_pairs = []
+        if sort_keys_raw:
+            for token in sort_keys_raw.split(","):
+                token = token.strip()
+                if ":" in token:
+                    f, d = token.rsplit(":", 1)
+                    sort_pairs.append((f.strip(), d.strip()))
+                elif token:
+                    sort_pairs.append((token, self.default_sort_direction))
+
+        if (
+            view_type == "recently_viewed"
+            and not sort_pairs
+            and not sort_field
+            and "pks" in locals()
+        ):
             preserved_order = Case(
                 *[When(pk=pk, then=pos) for pos, pk in enumerate(pks)]
             )
             queryset = queryset.order_by(preserved_order)
+        elif sort_pairs:
+            queryset = self._apply_multi_sorting(queryset, sort_pairs)
         elif sort_field:
             queryset = self._apply_sorting(queryset, sort_field, sort_direction)
         elif view_type == "recently_created":
@@ -329,6 +348,54 @@ class HorillaListView(HorillaListViewMixin, ListView):
         except Exception as e:
 
             logger.warning("Could not sort by field '%s': %s", mapped_field, str(e))
+            return queryset
+
+    def _apply_multi_sorting(self, queryset, sort_pairs):
+        """Apply multiple sort columns in order. sort_pairs is a list of (field, direction) tuples."""
+        order_fields = []
+        for field, direction in sort_pairs:
+            if field.startswith("get_") and field.endswith("_display"):
+                field = field[4:-8]
+
+            mapped_field = next(
+                (
+                    item[1]
+                    for item in getattr(self, "sort_by_mapping", [])
+                    if item[0] == field
+                ),
+                field,
+            )
+            model_class = queryset.model
+            if not hasattr(model_class, mapped_field):
+                continue
+
+            attr = getattr(model_class, mapped_field)
+            if callable(attr) or isinstance(attr, property):
+                continue
+
+            try:
+                field_obj = model_class._meta.get_field(mapped_field)
+                if isinstance(field_obj, GenericForeignKey):
+                    ct_field = field_obj.ct_field + "_id"
+                    fk_field = field_obj.fk_field
+                    if direction == "desc":
+                        order_fields.extend([f"-{ct_field}", f"-{fk_field}"])
+                    else:
+                        order_fields.extend([ct_field, fk_field])
+                    continue
+            except Exception:
+                pass
+
+            order_fields.append(
+                f"-{mapped_field}" if direction == "desc" else mapped_field
+            )
+
+        if not order_fields:
+            return queryset
+        try:
+            return queryset.order_by(*order_fields)
+        except Exception as e:
+            logger.warning("Could not apply multi-sort %s: %s", order_fields, str(e))
             return queryset
 
     def render_to_response(self, context, **response_kwargs):
@@ -729,6 +796,25 @@ class HorillaListView(HorillaListViewMixin, ListView):
         context["enable_sorting"] = self.enable_sorting
         context["sorting_target"] = self.sorting_target
         context["exclude_columns_from_sorting"] = self.exclude_columns_from_sorting
+
+        # Multi-column sort: parse sort_keys into a dict {field: direction} preserving order
+        sort_keys_raw = self.request.GET.get("sort_keys", "")
+        sort_keys_map = {}
+        sort_keys_order = []
+        if sort_keys_raw:
+            for token in sort_keys_raw.split(","):
+                token = token.strip()
+                if ":" in token:
+                    f, d = token.rsplit(":", 1)
+                    f = f.strip()
+                    if f not in sort_keys_map:
+                        sort_keys_order.append(f)
+                    sort_keys_map[f] = d.strip()
+                elif token and token not in sort_keys_map:
+                    sort_keys_map[token] = self.default_sort_direction
+                    sort_keys_order.append(token)
+        context["sort_keys_map"] = sort_keys_map
+        context["sort_keys_raw"] = sort_keys_raw
 
     def get_context_data(self, **kwargs):
         """Enhance context with column and filtering information."""
