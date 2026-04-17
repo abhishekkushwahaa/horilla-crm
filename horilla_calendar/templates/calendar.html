@@ -316,7 +316,13 @@
                         eventDurationEditable: false,
                         selectable: true,
                         nowIndicator: true,
-                        dayMaxEvents: true,
+                        dayMaxEvents: 2,
+                        /* Show only the event title in month/week cells, not "8:14am Title" */
+                        displayEventTime: false,
+                        // Stable built-in sorting (avoid custom comparator runtime issues).
+                        eventOrderStrict: true,
+                        // Prefer shorter all-day items first so single-day markers don't get buried by long spans.
+                        eventOrder: "start,duration,allDay,title",
 
 
                         views: {
@@ -445,6 +451,38 @@
                                         ` : '' }
                                     </div>
                                 `;
+                            } else if (String(event.extendedProps.calendarType || "").startsWith("custom_")) {
+                                const safeTitle = escapeHtml(event.title);
+                                const startDisplay = event.extendedProps.start_display || (event.start ? event.start.toLocaleString() : "—");
+                                const endDisplay = event.extendedProps.end_display || (event.end ? event.end.toLocaleString() : "—");
+                                const safeDetailUrl = escapeHtml(event.extendedProps.detailUrl || "");
+                                const safeDetailUrlJs = escapeJsString(event.extendedProps.detailUrl || "");
+                                const safeEventIdJs = escapeJsString(event.id);
+                                content = `
+                                    <div class="flex flex-col gap-2 text-sm">
+                                        <h5 class="font-semibold mb-1 bg-primary-300 text-primary-600">${safeTitle}</h5>
+                                        <div class="grid grid-cols-[90px_10px_minmax(0,1fr)] gap-y-1">
+                                            <div class="font-bold">{% trans 'Start Date' %}</div>
+                                            <div>:</div>
+                                            <div>${startDisplay}</div>
+                                            <div class="font-bold">{% trans 'End Date' %}</div>
+                                            <div>:</div>
+                                            <div>${endDisplay}</div>
+                                        </div>
+                                    </div>
+                                `;
+                                icons = safeDetailUrl ? `
+                                    <div class="flex tablebtn mt-3">
+                                        <button type="button"
+                                            onclick="showEventInfo('${safeEventIdJs}', '${safeDetailUrlJs}')"
+                                            class="w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center"
+                                            title="{% trans 'Info' %}"
+                                            aria-label="{% trans 'Info' %}"
+                                        >
+                                            <i class="fas fa-info-circle text-color-600"></i>
+                                        </button>
+                                    </div>
+                                ` : "";
                             } else {
                                 // Content for other activity types
                                 const subject = event.extendedProps.subject || "No subject";
@@ -962,16 +1000,32 @@
                     </div>
                 </div>
                 <div class="col-span-6 lg:col-span-2">
-                    <div class="h-full shadow-[0px_0px_20px_0px_rgba(0,0,0,0.05)] bg-white rounded-lg z-0 p-4 w-[180px]">
-                        <div class="flex items-center gap-1">
-                            <div class="w-3">
-                                <input
-                                    type="checkbox"
-                                    class="w-5 h-5 border-2 rounded-sm focus:ring-0 master-checkbox"
-                                    id="masterCheckbox"
-                                >
+                    <div class="h-full shadow-[0px_0px_20px_0px_rgba(0,0,0,0.05)] bg-white rounded-lg z-0 p-4 w-[200px]">
+                        <div class="flex items-center gap-1 justify-between w-full min-w-0">
+                            <div class="flex items-center gap-1 min-w-0">
+                                <div class="w-3 shrink-0">
+                                    <input
+                                        type="checkbox"
+                                        class="w-4 h-4 border-2 rounded-sm focus:ring-0 master-checkbox"
+                                        id="masterCheckbox"
+                                    >
+                                </div>
+                                <span class="p-3 text-sm">{% trans 'My Calendars' %}</span>
                             </div>
-                            <span class="flex-2 p-3 text-sm">{% trans 'My Calendars' %}</span>
+                            {% if perms.horilla_calendar.add_customcalendar %}
+                                <button
+                                    type="button"
+                                    class="shrink-0 w-8 h-8 flex items-center justify-center text-primary-600 pl-2"
+                                    hx-get="{% url 'horilla_calendar:custom_calendar_create' %}"
+                                    hx-target="#modalBox"
+                                    hx-swap="innerHTML"
+                                    hx-on:click="openModal()"
+                                    title="{% trans 'Add custom calendar' %}"
+                                    aria-label="{% trans 'Add custom calendar' %}"
+                                >
+                                    <i class="fa-solid fa-plus text-sm"></i>
+                                </button>
+                            {% endif %}
                         </div>
                         <div>
                             {% for calendar in calendars %}
@@ -980,7 +1034,7 @@
                                         <div class="w-5">
                                             <input
                                                 type="checkbox"
-                                                class="w-5 h-5 border-2 rounded-sm focus:ring-0 calendar-checkbox"
+                                                class="w-4 h-4 border-2 rounded-sm focus:ring-0 calendar-checkbox"
                                                 data-calendar-type="{{ calendar.id }}"
                                                 {% if calendar.selected %}
                                                     style="border-color: {{ user_preferences|lookup:calendar.id|default:calendar.default_color }}; background-color: {{ user_preferences|lookup:calendar.id|default:calendar.default_color }} !important; color: {{ user_preferences|lookup:calendar.id|default:calendar.default_color }}; accent-color: {{ user_preferences|lookup:calendar.id|default:calendar.default_color }}"
@@ -1026,6 +1080,93 @@
                                                         data-calendar-type="{{ calendar.id }}"
                                                     >
                                                 </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            {% for cc in custom_calendars %}
+                                <div class="flex items-center justify-between gap-2 mb-3 relative">
+                                    <div class="flex gap-1 text-sm items-center flex-1 min-w-0">
+                                        <div class="w-5 shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                class="w-4 h-4 border-2 rounded-sm focus:ring-0 calendar-checkbox"
+                                                data-calendar-type="custom_{{ cc.id }}"
+                                                {% if cc.is_selected %}
+                                                    style="border-color: {{ cc.color }}; background-color: {{ cc.color }} !important; color: {{ cc.color }}; accent-color: {{ cc.color }}"
+                                                {% else %}
+                                                    style="border-color: {{ cc.color }}; background-color: transparent !important; color: {{ cc.color }}; accent-color: {{ cc.color }}"
+                                                {% endif %}
+                                                {% if cc.is_selected %}
+                                                    checked
+                                                {% endif %}
+                                            >
+                                        </div>
+                                        <span class="flex-1 truncate" title="{{ cc.name }}">{{ cc.name }}</span>
+                                    </div>
+                                    <div class="relative dropdown-wrapper shrink-0">
+                                        <button class="text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center w-6 h-6">
+                                            <img
+                                                src="{% static 'assets/icons/down.svg' %}"
+                                                alt="{% trans 'Dropdown' %}"
+                                                width="13"
+                                            >
+                                        </button>
+                                        <div class="dropdown-content w-48 absolute bg-white border-primary-300 rounded-lg [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_8%)] py-2 right-5 top-full z-60">
+                                            <ul class="text-sm">
+                                                <li>
+                                                    <button
+                                                        type="button"
+                                                        class="px-4 py-1.5 hover:text-primary-600 transition duration-300 text-sm w-full text-left"
+                                                        hx-get="{% url 'horilla_calendar:calendar_view' %}?display_only=custom_{{ cc.id }}"
+                                                        hx-target="#mainContent"
+                                                        hx-select="#mainContent"
+                                                        hx-swap="outerHTML"
+                                                    >
+                                                        {% trans 'Display This Only' %}
+                                                    </button>
+                                                </li>
+                                                <li class="px-4 py-1.5 flex items-center gap-2">
+                                                    <span
+                                                        class="hover:text-primary-600 transition duration-300 text-sm"
+                                                    >{% trans 'Color' %}</span>
+                                                    <input
+                                                        type="color"
+                                                        class="w-18 h-6 border-none outline-none cursor-pointer calendar-color-picker"
+                                                        value="{{ cc.color }}"
+                                                        data-calendar-type="custom_{{ cc.id }}"
+                                                    >
+                                                </li>
+                                                {% if perms.horilla_calendar.change_customcalendar %}
+                                                    <li>
+                                                        <button
+                                                            type="button"
+                                                            class="px-4 py-1.5 hover:text-red-600 transition duration-300 text-sm w-full text-left"
+                                                            hx-get="{% url 'horilla_calendar:custom_calendar_update' pk=cc.id %}"
+                                                            hx-target="#modalBox"
+                                                            hx-swap="innerHTML"
+                                                            hx-on:click="openModal()"
+                                                        >
+                                                            {% trans 'Update' %}
+                                                        </button>
+                                                    </li>
+                                                {% endif %}
+                                                {% if perms.horilla_calendar.delete_customcalendar %}
+                                                    <li>
+                                                        <button
+                                                            type="button"
+                                                            class="px-4 py-1.5 hover:text-red-600 transition duration-300 text-sm w-full text-left"
+                                                            hx-get="{% url 'horilla_calendar:custom_calendar_delete' pk=cc.id %}"
+                                                            hx-target="#deleteModeBox"
+                                                            hx-swap="innerHTML"
+                                                            hx-on:click="openDeleteModeModal()"
+                                                            hx-vals='{"check_dependencies": "true"}'
+                                                        >
+                                                            {% trans 'Delete' %}
+                                                        </button>
+                                                    </li>
+                                                {% endif %}
                                             </ul>
                                         </div>
                                     </div>

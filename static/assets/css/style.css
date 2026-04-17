@@ -1341,8 +1341,9 @@ input[type="radio"] {
   transition: all 0.2s ease-in-out;
 }
 
-/* Inner filled circle when checked */
-.radio-group input[type="radio"]:checked+.custom-radio::after {
+/* Inner filled circle when checked (via sibling input or direct .checked class) */
+.radio-group input[type="radio"]:checked+.custom-radio::after,
+.radio-group .custom-radio.checked::after {
   content: "";
   width: 10px;
   height: 10px;

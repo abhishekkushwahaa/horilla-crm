@@ -250,6 +250,9 @@ body.dark .bg-yellow-100 {
 body.dark .text-yellow-800 {
   color: #fde68a !important;
 }
+body.dark .text-dark-400 {
+  color: #ffffff !important;
+}
 body.dark .bg-\[\#efefef96\] {
   background-color: #5c5c5c96;
 }
