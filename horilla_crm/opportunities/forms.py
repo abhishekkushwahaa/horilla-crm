@@ -1,20 +1,21 @@
-"""Forms for managing Opportunity-related models in the CRM application."""
+﻿"""Forms for managing Opportunity-related models in the CRM application."""
 
 # Standard library imports
 import logging
 
 # Django imports
 from django import forms
-from django.core.exceptions import FieldDoesNotExist
 
 from horilla.auth.models import User
+from horilla.contrib.core.mixins import OwnerQuerysetMixin
+from horilla.contrib.core.models import TeamRole
+from horilla.contrib.generics.forms import HorillaModelForm, HorillaMultiStepForm
+from horilla.core.exceptions import FieldDoesNotExist
 
 # Horilla / first-party imports
 from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.mixins import OwnerQuerysetMixin
-from horilla_core.models import TeamRole
 from horilla_crm.opportunities.models import (
     DefaultOpportunityMember,
     Opportunity,
@@ -22,7 +23,6 @@ from horilla_crm.opportunities.models import (
     OpportunityTeam,
     OpportunityTeamMember,
 )
-from horilla_generics.forms import HorillaModelForm, HorillaMultiStepForm
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +245,7 @@ class OpportunityTeamForm(HorillaModelForm):
                             attrs={
                                 "class": "select2-pagination w-full",
                                 "data-url": reverse_lazy(
-                                    "horilla_generics:model_select2",
+                                    "generics:model_select2",
                                     kwargs={
                                         "app_label": app_label,
                                         "model_name": model_name,
@@ -316,9 +316,9 @@ class OpportunityTeamForm(HorillaModelForm):
             for field_name in self.condition_fields:
                 if field_name in self.fields:
                     value = getattr(first_member, field_name, "")
-                    # Handle ForeignKey fields
-                    if field_name == "user" and value:
-                        value = value.pk if hasattr(value, "pk") else value
+                    # Convert FK instances to PKs so ChoiceField initial matches option values
+                    if hasattr(value, "pk"):
+                        value = value.pk
 
                     self.fields[field_name].initial = value
                     field_key_0 = f"{field_name}_0"

@@ -10,6 +10,13 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.views.generic import View
 
+from horilla.contrib.automations.filters import HorillaAutomationFilter
+from horilla.contrib.automations.models import HorillaAutomation
+from horilla.contrib.automations.views import HorillaAutomationFormView
+from horilla.contrib.core.models import HorillaContentType
+from horilla.contrib.generics.views import HorillaNavView, HorillaView
+from horilla.contrib.utils.middlewares import _thread_local
+
 # First-party / Horilla imports
 from horilla.http import HttpResponse
 from horilla.shortcuts import render
@@ -20,12 +27,6 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_automations.filters import HorillaAutomationFilter
-from horilla_automations.models import HorillaAutomation
-from horilla_automations.views import HorillaAutomationFormView
-from horilla_core.models import HorillaContentType
-from horilla_generics.views import HorillaNavView, HorillaView
-from horilla_utils.middlewares import _thread_local
 
 
 class BigDealAlertView(LoginRequiredMixin, HorillaView):
@@ -40,7 +41,7 @@ class BigDealAlertView(LoginRequiredMixin, HorillaView):
 
 @method_decorator(htmx_required, name="dispatch")
 @method_decorator(
-    permission_required_or_denied("horilla_automations.view_horillaautomation"),
+    permission_required_or_denied("automations.view_horillaautomation"),
     name="dispatch",
 )
 class BigDealAlertNavbar(LoginRequiredMixin, HorillaNavView):
@@ -64,7 +65,7 @@ class BigDealAlertNavbar(LoginRequiredMixin, HorillaNavView):
     @cached_property
     def new_button(self):
         """Return the 'Big Deal Create' button if the user has add permission."""
-        if self.request.user.has_perm("horilla_automations.add_horillaautomation"):
+        if self.request.user.has_perm("automations.add_horillaautomation"):
             return {
                 "url": reverse_lazy("opportunities:big_deal_automation_create"),
                 "attrs": {"id": "big-deal-create"},
@@ -74,7 +75,7 @@ class BigDealAlertNavbar(LoginRequiredMixin, HorillaNavView):
 
 @method_decorator(htmx_required, name="dispatch")
 @method_decorator(
-    permission_required_or_denied("horilla_automations.view_horillaautomation"),
+    permission_required_or_denied("automations.view_horillaautomation"),
     name="dispatch",
 )
 class BigDealAlertListView(LoginRequiredMixin, View):

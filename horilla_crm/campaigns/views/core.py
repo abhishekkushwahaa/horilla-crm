@@ -11,22 +11,9 @@ from urllib.parse import urlencode
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import View
 
-from horilla.shortcuts import get_object_or_404, render
-
-# First-party / Horilla imports
-from horilla.urls import reverse_lazy
-from horilla.utils.decorators import (
-    htmx_required,
-    method_decorator,
-    permission_required,
-    permission_required_or_denied,
-)
-from horilla.utils.translation import gettext_lazy as _
-from horilla_activity.views import HorillaActivitySectionView
-from horilla_crm.campaigns.filters import CampaignFilter
-from horilla_crm.campaigns.models import Campaign, CampaignMember
-from horilla_generics.mixins import RecentlyViewedMixin
-from horilla_generics.views import (
+from horilla.contrib.activity.views import HorillaActivitySectionView
+from horilla.contrib.generics.mixins import RecentlyViewedMixin
+from horilla.contrib.generics.views import (
     HorillaChartView,
     HorillaDetailSectionView,
     HorillaDetailTabView,
@@ -41,8 +28,23 @@ from horilla_generics.views import (
     HorillaSplitView,
     HorillaView,
 )
-from horilla_generics.views.card import HorillaCardView
-from horilla_generics.views.timeline import HorillaTimelineView
+from horilla.contrib.generics.views.card import HorillaCardView
+from horilla.contrib.generics.views.timeline import HorillaTimelineView
+from horilla.shortcuts import get_object_or_404, render
+
+# First-party / Horilla imports
+from horilla.urls import reverse_lazy
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
+from horilla_crm.campaigns.filters import CampaignFilter
+from horilla_crm.campaigns.models import Campaign, CampaignMember
 
 logger = logging.getLogger(__name__)
 
@@ -548,6 +550,7 @@ class CampaignDetailViewTabs(LoginRequiredMixin, HorillaDetailTabView):
 
     def _prepare_detail_tabs(self):
         self.object_id = self.request.GET.get("object_id")
+        self.model = Campaign
         super()._prepare_detail_tabs()
 
     urls = {

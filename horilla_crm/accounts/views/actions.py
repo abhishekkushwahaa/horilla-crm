@@ -12,6 +12,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.views.generic import FormView, View
 
+from horilla.contrib.generics.views import (
+    HorillaMultiStepFormView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+)
 from horilla.http import Http404, HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 
@@ -23,6 +28,8 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.accounts.forms import (
     AccountFormClass,
     AccountSingleForm,
@@ -30,11 +37,6 @@ from horilla_crm.accounts.forms import (
 )
 from horilla_crm.accounts.models import Account, PartnerAccountRelationship
 from horilla_crm.contacts.models import ContactAccountRelationship
-from horilla_generics.views import (
-    HorillaMultiStepFormView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +171,7 @@ class AddRelatedContactFormView(LoginRequiredMixin, HorillaSingleFormView):
         )
 
     def get_initial(self):
+        """Prefill relationship form with selected account id from query params."""
         initial = super().get_initial()
         obj_id = self.request.GET.get("id")
         if obj_id:
@@ -200,6 +203,7 @@ class AddChildAccountFormView(LoginRequiredMixin, FormView):
     header = True
 
     def get(self, request, *args, **kwargs):
+        """Authorize child-account form access based on perms or ownership."""
 
         account_id = request.GET.get("id")
         if request.user.has_perm("accounts.change_account") or request.user.has_perm(
@@ -302,7 +306,7 @@ class AddChildAccountFormView(LoginRequiredMixin, FormView):
                         selected_account.company = self.request.active_company
                         selected_account.save()
                         messages.success(
-                            self.request, _("Child account assigned successfully!")
+                            self.request, _("Child account assigned successfully.")
                         )
                         response = HttpResponse(
                             "<script>htmx.trigger('#tab-child_accounts-btn', 'click');closeModal();</script>"

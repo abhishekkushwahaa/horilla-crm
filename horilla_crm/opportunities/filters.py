@@ -6,14 +6,14 @@ using HorillaFilterSet. Each filter class allows filtering all fields
 (except 'additional_info') and provides specific search fields.
 """
 
-from horilla_core.mixins import OwnerFiltersetMixin
+from horilla.contrib.core.mixins import OwnerFiltersetMixin
+from horilla.contrib.generics.filters import HorillaFilterSet
 from horilla_crm.opportunities.models import (
     DefaultOpportunityMember,
     Opportunity,
     OpportunityStage,
     OpportunityTeam,
 )
-from horilla_generics.filters import HorillaFilterSet
 
 
 class OpportunityFilter(OwnerFiltersetMixin, HorillaFilterSet):

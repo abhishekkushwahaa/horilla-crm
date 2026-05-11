@@ -14,6 +14,11 @@ from django.views.generic import FormView, View
 
 # First-party / Horilla imports
 from horilla.apps import apps
+from horilla.contrib.generics.views import (
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+)
+from horilla.contrib.generics.views.multi_form import HorillaMultiStepFormView
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
@@ -23,6 +28,8 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.campaigns.forms import (
     CampaignFormClass,
     CampaignMemberForm,
@@ -30,8 +37,6 @@ from horilla_crm.campaigns.forms import (
     ChildCampaignForm,
 )
 from horilla_crm.campaigns.models import Campaign, CampaignMember
-from horilla_generics.views import HorillaSingleDeleteView, HorillaSingleFormView
-from horilla_generics.views.multi_form import HorillaMultiStepFormView
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +146,7 @@ class AddChildCampaignFormView(LoginRequiredMixin, FormView):
     form_class = ChildCampaignForm
 
     def get(self, request, *args, **kwargs):
+        """Authorize child-campaign form access and render the form."""
 
         campaign_id = request.GET.get("id")
         if request.user.has_perm("campaigns.change_campaign") or request.user.has_perm(
@@ -238,7 +244,7 @@ class AddChildCampaignFormView(LoginRequiredMixin, FormView):
             selected_campaign.updated_by = self.request.user
             selected_campaign.save()
 
-            messages.success(self.request, _("Child campaign assigned successfully!"))
+            messages.success(self.request, _("Child campaign assigned successfully."))
 
         except ValueError:
             form.add_error(None, _("Invalid parent campaign ID format."))
@@ -368,6 +374,7 @@ class AddToCampaignFormview(LoginRequiredMixin, HorillaSingleFormView):
         )
 
     def get_initial(self):
+        """Prefill lead field from query params for create mode."""
         initial = super().get_initial()
         lead_id = self.request.GET.get("id")
         if lead_id:
@@ -400,15 +407,15 @@ class AddCampaignMemberFormview(LoginRequiredMixin, HorillaSingleFormView):
     save_and_new = False
 
     def get_initial(self):
+        """Initialize campaign member form fields from request parameters."""
         initial = super().get_initial()
         campaign_id = (
             self.request.GET.get("id")
             if self.request.GET.get("id")
             else self.request.GET.get("campaign")
         )
-        member_type = self.request.GET.get("member_type")
-        if member_type:
-            initial["member_type"] = member_type
+        member_type = self.request.GET.get("member_type") or "lead"
+        initial["member_type"] = member_type
         if campaign_id:
             initial["campaign"] = campaign_id
         return initial
@@ -472,6 +479,7 @@ class AddContactToCampaignFormView(LoginRequiredMixin, HorillaSingleFormView):
         )
 
     def get_initial(self):
+        """Prefill contact field from query params for create mode."""
         initial = super().get_initial()
         contact_id = self.request.GET.get("id")
         if contact_id:

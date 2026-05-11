@@ -4,8 +4,8 @@ Filters for the forecast app.
 This module defines filter classes used to search and filter forecast records.
 """
 
+from horilla.contrib.generics.filters import HorillaFilterSet
 from horilla_crm.forecast.models import ForecastTarget, ForecastType
-from horilla_generics.filters import HorillaFilterSet
 
 
 class ForecastTargetFilter(HorillaFilterSet):

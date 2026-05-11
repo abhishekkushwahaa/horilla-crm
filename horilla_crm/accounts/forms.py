@@ -1,4 +1,4 @@
-"""
+﻿"""
 Forms for the Accounts app.
 
 Includes forms for creating/editing accounts and assigning child accounts,
@@ -8,14 +8,15 @@ with validation and dynamic queryset setup to prevent circular references.
 # Third-party imports(Django)
 from django import forms
 
+from horilla.contrib.core.mixins import OwnerQuerysetMixin
+from horilla.contrib.generics.forms import HorillaModelForm, HorillaMultiStepForm
+
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.mixins import OwnerQuerysetMixin
 
 # Local Imports
 from horilla_crm.accounts.models import Account
-from horilla_generics.forms import HorillaModelForm, HorillaMultiStepForm
 
 
 class AccountFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
@@ -124,7 +125,7 @@ class AddChildAccountForm(forms.Form):
                 "class": "select2-pagination w-full text-sm",
                 "data-placeholder": "Select Account",
                 "data-url": reverse_lazy(
-                    "horilla_generics:model_select2",
+                    "generics:model_select2",
                     kwargs={"app_label": "accounts", "model_name": "Account"},
                 ),
                 "data-field-name": "account",
@@ -216,6 +217,7 @@ class AddChildAccountForm(forms.Form):
         return account
 
     def clean(self):
+        """Validate form-level data and ensure an account is selected."""
         cleaned_data = super().clean()
         account = cleaned_data.get("account")
 

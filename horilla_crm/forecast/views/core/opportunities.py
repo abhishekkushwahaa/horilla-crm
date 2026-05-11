@@ -8,10 +8,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.template.loader import render_to_string
 from django.views import View
 
+# First-party / Horilla imports
+from horilla.contrib.core.models import FiscalYearInstance, Period
+from horilla.contrib.generics.views import HorillaListView
 from horilla.http import HttpNotFound
 from horilla.shortcuts import get_object_or_404, render
-
-# First-party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -19,10 +20,10 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import FiscalYearInstance, Period
+
+# First-party / Horilla apps
 from horilla_crm.forecast.models import Forecast, ForecastType
 from horilla_crm.opportunities.models import Opportunity
-from horilla_generics.views import HorillaListView
 
 
 @method_decorator(htmx_required, name="dispatch")

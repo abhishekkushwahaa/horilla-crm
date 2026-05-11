@@ -6,9 +6,15 @@ from functools import cached_property
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from horilla.http import HttpResponse
-
 # First-party / Horilla imports
+from horilla.contrib.generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+    HorillaView,
+)
+from horilla.http import HttpResponse
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -17,15 +23,10 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.leads.forms import EmailToLeadForm
 from horilla_crm.leads.models import EmailToLeadConfig
-from horilla_generics.views import (
-    HorillaListView,
-    HorillaNavView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-    HorillaView,
-)
 
 
 class MailToLeadView(LoginRequiredMixin, HorillaView):

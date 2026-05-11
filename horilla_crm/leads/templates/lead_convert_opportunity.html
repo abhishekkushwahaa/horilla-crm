@@ -23,7 +23,7 @@
             <select
                 name="existing_opportunity"
                 class="select2-pagination w-full text-sm"
-                data-url="{% url 'horilla_generics:model_select2' app_label='opportunities' model_name='Opportunity' %}?account={{ selected_account_id }}"
+                data-url="{% url 'generics:model_select2' app_label='opportunities' model_name='Opportunity' %}?account={{ selected_account_id }}"
                 data-placeholder="Select opportunity"
                 data-dependency="existing_account"
                 id="id_existing_opportunity"

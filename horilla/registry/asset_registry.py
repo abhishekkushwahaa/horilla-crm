@@ -79,7 +79,7 @@ def register_html(
     template_path : str
         Django template path that renders a valid HTML fragment.
         Example:
-            "horilla_theme/slots/tailwind_dynamic_config.html"
+            "theme/slots/tailwind_dynamic_config.html"
 
     slot : str
         Target layout slot.

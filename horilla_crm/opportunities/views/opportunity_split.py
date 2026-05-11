@@ -6,15 +6,18 @@ from decimal import Decimal
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-
-# First-party / Horilla imports
-from django.urls import reverse
 from django.views.generic import TemplateView, View
 
+# First-party / Horilla imports
 from horilla.auth.models import User
+from horilla.contrib.generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaTabView,
+)
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
-from horilla.urls import reverse_lazy
+from horilla.urls import reverse, reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
     method_decorator,
@@ -22,6 +25,8 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.opportunities.models import (
     Opportunity,
     OpportunitySettings,
@@ -29,7 +34,6 @@ from horilla_crm.opportunities.models import (
     OpportunitySplitType,
     OpportunityTeamMember,
 )
-from horilla_generics.views import HorillaListView, HorillaNavView, HorillaTabView
 
 
 class TeamSellingRequiredMixin:
@@ -41,7 +45,7 @@ class TeamSellingRequiredMixin:
     """
 
     def dispatch(self, request, *args, **kwargs):
-        """Check if team selling is enabled before allowing access to the view."""
+        """Guard team-selling pages when team selling is disabled."""
         if not OpportunitySettings.is_team_selling_enabled(
             getattr(request, "active_company", None)
         ):
@@ -72,7 +76,7 @@ class SplitEnabledRequiredMixin:
     """
 
     def dispatch(self, request, *args, **kwargs):
-        """Check if opportunity splits are enabled before allowing access to the view."""
+        """Guard split pages when the split feature is disabled."""
         if not OpportunitySettings.is_split_enabled(
             getattr(request, "active_company", None)
         ):
@@ -102,6 +106,7 @@ class SplitTypeView(LoginRequiredMixin, TeamSellingRequiredMixin, TemplateView):
     template_name = "opportunity_split/opportunity_split_view.html"
 
     def get_context_data(self, **kwargs):
+        """Provide team-selling and split toggle state for settings page."""
         context = super().get_context_data(**kwargs)
         company = self.request.active_company
         settings = OpportunitySettings.get_settings(company)
@@ -182,7 +187,7 @@ class ToggleOpportunitySplitView(LoginRequiredMixin, TeamSellingRequiredMixin, V
             messages.success(
                 request,
                 _(
-                    "Opportunity Splits has been enabled successfully! "
+                    "Opportunity Splits has been enabled successfully."
                     "Users can now split opportunities and assign percentages to team members."
                 ),
             )
@@ -316,6 +321,7 @@ class OpportunitySplitTabView(
     background_class = "bg-primary-100 rounded-md"
 
     def setup(self, request, *args, **kwargs):
+        """Initialize split tabs before rendering the tab container."""
         super().setup(request, *args, **kwargs)
         self.tabs = self.get_split_tabs()
 
@@ -379,6 +385,7 @@ class OpportunitySplitTabContentView(
     template_name = "opportunity_split/split_tab_content.html"
 
     def get_context_data(self, **kwargs):
+        """Build context for one split-type tab with users, totals, and rows."""
         context = super().get_context_data(**kwargs)
         opportunity_id = self.kwargs.get("opportunity_id")
         split_type_id = self.kwargs.get("split_type_id")

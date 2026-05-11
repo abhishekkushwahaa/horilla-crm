@@ -14,25 +14,11 @@ from urllib.parse import urlencode
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import View
 
-from horilla.shortcuts import get_object_or_404, render
-
 # First-party / Horilla imports
-from horilla.urls import reverse_lazy
-from horilla.utils.decorators import (
-    htmx_required,
-    method_decorator,
-    permission_required,
-    permission_required_or_denied,
-)
-from horilla.utils.translation import gettext_lazy as _
-from horilla_activity.views import HorillaActivitySectionView
-from horilla_cadences.views import CadenceRecordTabView
-from horilla_core.utils import is_owner
-from horilla_crm.accounts.filters import AccountFilter
-from horilla_crm.accounts.models import Account, PartnerAccountRelationship
-from horilla_crm.contacts.models import ContactAccountRelationship
-from horilla_generics.mixins import RecentlyViewedMixin
-from horilla_generics.views import (
+from horilla.contrib.activity.views import HorillaActivitySectionView
+from horilla.contrib.core.utils import is_owner
+from horilla.contrib.generics.mixins import RecentlyViewedMixin
+from horilla.contrib.generics.views import (
     HorillaChartView,
     HorillaDetailSectionView,
     HorillaDetailTabView,
@@ -47,8 +33,22 @@ from horilla_generics.views import (
     HorillaSplitView,
     HorillaView,
 )
-from horilla_generics.views.card import HorillaCardView
-from horilla_generics.views.timeline import HorillaTimelineView
+from horilla.contrib.generics.views.card import HorillaCardView
+from horilla.contrib.generics.views.timeline import HorillaTimelineView
+from horilla.shortcuts import get_object_or_404, render
+from horilla.urls import reverse_lazy
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
+from horilla_crm.accounts.filters import AccountFilter
+from horilla_crm.accounts.models import Account, PartnerAccountRelationship
+from horilla_crm.contacts.models import ContactAccountRelationship
 
 logger = logging.getLogger(__name__)
 
@@ -517,12 +517,13 @@ class AccountDetailViewTabs(LoginRequiredMixin, HorillaDetailTabView):
 
     def _prepare_detail_tabs(self):
         self.object_id = self.request.GET.get("object_id")
+        self.model = Account
         super()._prepare_detail_tabs()
 
     urls = {
         "details": "accounts:account_details_tab_view",
         "activity": "accounts:account_activity_tab_view",
-        "cadences": "accounts:account_cadences_tab",
+        "cadences": "cadences:account_cadences_tab",
         "related_lists": "accounts:account_related_list_tab_view",
         "notes_attachments": "accounts:account_notes_attachements",
         "history": "accounts:account_history_tab_view",
@@ -567,13 +568,6 @@ class AccountActivityTab(LoginRequiredMixin, HorillaActivitySectionView):
     ),
     name="dispatch",
 )
-class AccountCadenceTab(CadenceRecordTabView):
-    """Cadence tab view for account detail."""
-
-    app_label = "accounts"
-    model_name = "Account"
-
-
 @method_decorator(
     permission_required_or_denied(
         ["accounts.view_account", "accounts.view_own_account"]

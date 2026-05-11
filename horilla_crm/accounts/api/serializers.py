@@ -4,7 +4,7 @@ Serializers for horilla_crm.accounts models
 
 from rest_framework import serializers
 
-from horilla_core.api.serializers import HorillaUserSerializer
+from horilla.contrib.core.api.serializers import HorillaUserSerializer
 from horilla_crm.accounts.models import Account, PartnerAccountRelationship
 
 

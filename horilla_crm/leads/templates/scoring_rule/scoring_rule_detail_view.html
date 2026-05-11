@@ -1,7 +1,7 @@
 {% extends "settings/settings.html" %}
 {% load horilla_tags i18n static %}
 {% block settings %}
-    {% has_perm "horilla_core.view_scoringrule" as can_view_scoringrule %}
+    {% has_perm "core.view_scoringrule" as can_view_scoringrule %}
     {% if can_view_scoringrule %}
         <div id="scoring-rule-view">
             {% include "messages.html" %}
@@ -29,8 +29,8 @@
                             <th class="text-sm p-3 text-left w-12 rounded-tl-md">#</th>
                             <th class="text-sm p-3 text-left">{% trans "Criteria" %}</th>
                             <th class="text-sm p-3 text-left w-[200px]">{% trans "Points" %}</th>
-                            {% has_perm "horilla_core.change_scoringrule" as can_change_scoringrule %}
-                            {% has_perm "horilla_core.delete_scoringrule" as can_delete_scoringrule %}
+                            {% has_perm "core.change_scoringrule" as can_change_scoringrule %}
+                            {% has_perm "core.delete_scoringrule" as can_delete_scoringrule %}
                             {% if can_change_scoringrule or can_delete_scoringrule %}
                                 <th class="text-sm p-3 text-left w-[180px] rounded-tr-md">{% trans "Actions" %}</th>
                             {% endif %}
@@ -56,8 +56,8 @@
                                     {{ score_crite.get_operation_type_display }} {{ score_crite.points }}
                                     {% trans "Points" %}
                                 </td>
-                                {% has_perm "horilla_core.change_scoringrule" as can_change_scoringrule %}
-                                {% has_perm "horilla_core.delete_scoringrule" as can_delete_scoringrule %}
+                                {% has_perm "core.change_scoringrule" as can_change_scoringrule %}
+                                {% has_perm "core.delete_scoringrule" as can_delete_scoringrule %}
                                 {% if can_change_scoringrule or can_delete_scoringrule %}
                                     <td class="text-sm border border-[#efefef] text-left p-0 w-[84px] pr-3 pl-3">
                                         <div class="flex tablebtn h-full">
@@ -71,7 +71,7 @@
                                                     onclick="openModal()"
                                                 >
                                                     <img
-                                                        src="{% static '/assets/icons/edit.svg' %}"
+                                                        src="{% static 'assets/icons/edit.svg' %}"
                                                         alt="{% trans 'Edit' %}"
                                                         width="16"
                                                     >
@@ -89,7 +89,7 @@
                                                     onclick="openDeleteModeModal()"
                                                 >
                                                     <img
-                                                        src="{% static '/assets/icons/a4.svg' %}"
+                                                        src="{% static 'assets/icons/a4.svg' %}"
                                                         alt="{% trans 'Delete' %}"
                                                         width="16"
                                                     >

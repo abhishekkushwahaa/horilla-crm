@@ -13,7 +13,7 @@ class CampaignsConfig(AppLauncher):
     name = "horilla_crm.campaigns"
     verbose_name = _("Campaigns")
 
-    url_prefix = "campaigns/"
+    url_prefix = "crm/campaigns/"
     url_module = "horilla_crm.campaigns.urls"
     url_namespace = "campaigns"
 

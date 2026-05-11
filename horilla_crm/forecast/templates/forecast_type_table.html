@@ -24,7 +24,7 @@
         >
             <span class="flex items-center gap-2">
                 <span id="chart-analysis-spinner" class="htmx-indicator">
-                    <img src="{% static '/assets/icons/spinner.svg' %}" alt="{% trans 'Loading...' %}" width="25">
+                    <img src="{% static 'assets/icons/spinner.svg' %}" alt="{% trans 'Loading...' %}" width="25">
                 </span>
                 {% trans 'Chart Analysis' %}
             </span>
@@ -32,7 +32,7 @@
     </div>
     <div id="forecast-table" class="h-[calc(_100vh_-_330px_)] overflow-x-auto overflow-y-auto">
         <table class="min-w-max w-full whitespace-nowrap h-full">
-            <thead class="sticky top-0 bg-primary-100 text-primary-600 z-40">
+            <thead class="sticky top-0 bg-primary-100 text-primary-600 z-30">
                 <tr>
                     <th class="sticky left-0 z-30 bg-primary-100 text-[13px] font-bold rounded-md text-left p-3">
                         {% trans "Period" %}

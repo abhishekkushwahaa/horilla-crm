@@ -13,7 +13,7 @@ class ContactsConfig(AppLauncher):
     name = "horilla_crm.contacts"
     verbose_name = _("Contacts")
 
-    url_prefix = "contacts/"
+    url_prefix = "crm/contacts/"
     url_module = "horilla_crm.contacts.urls"
     url_namespace = "contacts"
 

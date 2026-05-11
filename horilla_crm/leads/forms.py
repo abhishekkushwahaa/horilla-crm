@@ -9,16 +9,17 @@ import pycountry
 # Third-party imports (Django)
 from django import forms
 
-from horilla.auth.models import User
-
 # First-party / Horilla imports
+from horilla.auth.models import User
+from horilla.contrib.core.mixins import OwnerQuerysetMixin
+from horilla.contrib.generics.forms import HorillaModelForm, HorillaMultiStepForm
+from horilla.contrib.mail.models import HorillaMailConfiguration
 from horilla.urls import reverse, reverse_lazy
-from horilla_core.mixins import OwnerQuerysetMixin
+
+# First-party / Horilla apps
 from horilla_crm.accounts.models import Account
 from horilla_crm.contacts.models import Contact
 from horilla_crm.opportunities.models import Opportunity
-from horilla_generics.forms import HorillaModelForm, HorillaMultiStepForm
-from horilla_mail.models import HorillaMailConfiguration
 
 # Local application imports
 from .models import (
@@ -67,7 +68,7 @@ class LeadFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
         self.fields["lead_status"].queryset = LeadStatus.objects.filter(is_final=False)
         self.fields["country"].widget.attrs.update(
             {
-                "hx-get": reverse_lazy("horilla_core:get_country_subdivisions"),
+                "hx-get": reverse_lazy("core:get_country_subdivisions"),
                 "hx-target": "#id_state",
                 "hx-trigger": "change",
                 "hx-swap": "innerHTML",
@@ -136,7 +137,7 @@ class LeadSingleForm(OwnerQuerysetMixin, HorillaModelForm):
         self.fields["lead_status"].queryset = LeadStatus.objects.filter(is_final=False)
         self.fields["country"].widget.attrs.update(
             {
-                "hx-get": reverse_lazy("horilla_core:get_country_subdivisions"),
+                "hx-get": reverse_lazy("core:get_country_subdivisions"),
                 "hx-target": "#id_state",
                 "hx-trigger": "change",
                 "hx-swap": "innerHTML",
@@ -312,6 +313,7 @@ class LeadConversionForm(forms.Form):
             self.fields["existing_opportunity"].queryset = None
 
     def clean(self):
+        """Validate account, contact, and opportunity selections for conversion."""
         cleaned_data = super().clean()
 
         # Validate account

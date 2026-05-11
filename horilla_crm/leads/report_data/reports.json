@@ -1,6 +1,6 @@
 [
     {
-        "model": "horilla_reports.reportfolder",
+        "model": "reports.reportfolder",
         "pk": 1,
         "fields": {
             "name": "Default Reports",
@@ -8,7 +8,7 @@
         }
     },
     {
-        "model": "horilla_reports.reportfolder",
+        "model": "reports.reportfolder",
         "pk": 2,
         "fields": {
             "name": "Lead Folder",
@@ -16,7 +16,7 @@
         }
     },
     {
-        "model": "horilla_reports.report",
+        "model": "reports.report",
         "fields": {
             "name": "Leads by Source",
             "module": {
@@ -35,7 +35,7 @@
         }
     },
     {
-        "model": "horilla_reports.report",
+        "model": "reports.report",
         "fields": {
             "name": "Converted Leads",
             "module": {
@@ -51,11 +51,10 @@
             "chart_type": "bar",
             "chart_field": null,
             "chart_field_stacked": null
-
         }
     },
     {
-        "model": "horilla_reports.report",
+        "model": "reports.report",
         "fields": {
             "name": "Leads by Owner",
             "module": {
@@ -71,11 +70,10 @@
             "chart_type": "bar",
             "chart_field": null,
             "chart_field_stacked": null
-
         }
     },
     {
-        "model": "horilla_reports.report",
+        "model": "reports.report",
         "fields": {
             "name": "Leads by Status",
             "module": {
@@ -91,8 +89,6 @@
             "chart_type": "donut",
             "chart_field": null,
             "chart_field_stacked": null
-
         }
     }
-
 ]

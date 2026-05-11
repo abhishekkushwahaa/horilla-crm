@@ -3,6 +3,7 @@ This module registers Floating, Settings, My Settings, and Main Section menus
 for the Horilla CRM Leads app
 """
 
+from horilla.contrib.core.menu import BaseSettings
 from horilla.menu import (
     floating_menu,
     main_section_menu,
@@ -13,7 +14,6 @@ from horilla.menu import (
 # First party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.menu import BaseSettings
 from horilla_crm.leads.models import Lead, LeadStatus, ScoringRule
 
 

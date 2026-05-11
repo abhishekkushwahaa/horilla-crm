@@ -13,7 +13,7 @@ class ForecastConfig(AppLauncher):
     name = "horilla_crm.forecast"
     verbose_name = _("Forecast")
 
-    url_prefix = "forecast/"
+    url_prefix = "crm/forecast/"
     url_module = "horilla_crm.forecast.urls"
     url_namespace = "forecast"
 

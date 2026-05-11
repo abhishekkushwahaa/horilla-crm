@@ -1,4 +1,4 @@
-""" Views for handling contact-related actions such as create, update, delete, and managing relationships. """
+"""Contact action views for create, relation, and hierarchy workflows."""
 
 # Standard library imports
 import logging
@@ -11,6 +11,11 @@ from django.utils import timezone
 from django.views.generic import FormView, View
 
 # First-party / Horilla imports
+from horilla.contrib.generics.views import (
+    HorillaMultiStepFormView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+)
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
@@ -20,6 +25,8 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.contacts.forms import (
     ChildContactForm,
     ContactFormClass,
@@ -27,11 +34,6 @@ from horilla_crm.contacts.forms import (
 )
 from horilla_crm.contacts.models import Contact, ContactAccountRelationship
 from horilla_crm.contacts.signals import set_contact_account_id
-from horilla_generics.views import (
-    HorillaMultiStepFormView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +220,7 @@ class AddRelatedAccountsFormView(LoginRequiredMixin, HorillaSingleFormView):
         )
 
     def get_initial(self):
+        """Prefill contact relation form from the selected contact id."""
         initial = super().get_initial()
         obj_id = self.request.GET.get("id")
         if obj_id:
@@ -246,6 +249,7 @@ class AddChildContactFormView(LoginRequiredMixin, FormView):
     header = True
 
     def get(self, request, *args, **kwargs):
+        """Authorize access to child-contact form based on ownership or permissions."""
         contact_id = request.GET.get("id")
         if request.user.has_perm(
             "contacts.change_contactaccount"
@@ -341,7 +345,7 @@ class AddChildContactFormView(LoginRequiredMixin, FormView):
                 selected_contact.updated_by = self.request.user
                 selected_contact.save()
                 messages.success(
-                    self.request, _("Child contact assigned successfully!")
+                    self.request, _("Child contact assigned successfully.")
                 )
                 result = HttpResponse(
                     "<script>htmx.trigger('#tab-child_contacts-btn', 'click');closeModal();</script>"

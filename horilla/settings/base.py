@@ -74,22 +74,22 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "drf_yasg",
     # Horilla apps
-    "horilla_core",
-    "horilla_generics",
-    "horilla_reports",
-    "horilla_dashboard",
-    "horilla_utils",
-    "horilla_notifications",
-    "horilla_mail",
-    "horilla_automations",
-    "horilla_activity",
-    "horilla_calendar",
-    "horilla_keys",
-    "horilla_theme",
-    "horilla_duplicates",
-    "horilla_processes.approvals",
-    "horilla_processes.reviews",
-    "horilla_cadences",
+    "horilla.contrib.core",
+    "horilla.contrib.generics",
+    "horilla.contrib.reports",
+    "horilla.contrib.dashboard",
+    "horilla.contrib.utils",
+    "horilla.contrib.notifications",
+    "horilla.contrib.mail",
+    "horilla.contrib.automations",
+    "horilla.contrib.activity",
+    "horilla.contrib.calendar",
+    "horilla.contrib.keys",
+    "horilla.contrib.theme",
+    "horilla.contrib.duplicates",
+    "horilla.contrib.process.approvals",
+    "horilla.contrib.process.reviews",
+    "horilla.contrib.cadences",
 ]
 
 
@@ -135,22 +135,35 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "horilla_core.middlewares.TimezoneMiddleware",
-    "horilla_core.middlewares.ActiveCompanyMiddleware",
-    "horilla_core.middlewares.HorillaExceptionMiddleware",
-    "horilla_core.middlewares.Horilla405Middleware",
-    "horilla_core.middlewares.SVGSecurityMiddleware",
-    "horilla_core.middlewares.HTMXRedirectMiddleware",
-    "horilla_core.middlewares.EnsureSectionMiddleware",
+    "horilla.contrib.core.middlewares.TimezoneMiddleware",
+    "horilla.contrib.core.middlewares.ActiveCompanyMiddleware",
+    "horilla.contrib.core.middlewares.HorillaExceptionMiddleware",
+    "horilla.contrib.core.middlewares.Horilla405Middleware",
+    "horilla.contrib.core.middlewares.SVGSecurityMiddleware",
+    "horilla.contrib.core.middlewares.HTMXRedirectMiddleware",
+    "horilla.contrib.core.middlewares.EnsureSectionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "horilla_utils.middlewares.ThreadLocalMiddleware",
+    "horilla.contrib.utils.middlewares.ThreadLocalMiddleware",
 ]
 
 
 ROOT_URLCONF = "horilla.urls.project"
+
+CONTEXT_PROCESSORS = [
+    "django.template.context_processors.request",
+    "django.contrib.auth.context_processors.auth",
+    "django.contrib.messages.context_processors.messages",
+    "horilla.context_processors.company_list",
+    "horilla.context_processors.allowed_languages",
+    "horilla.context_processors.recently_viewed_items",
+    "horilla.context_processors.unread_notifications",
+    "horilla.context_processors.menu_context_processor",
+    "horilla.context_processors.currency_context",
+    "horilla.context_processors.branding",
+]
 
 
 TEMPLATES = [
@@ -158,20 +171,7 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-                "horilla.context_processors.company_list",
-                "horilla.context_processors.allowed_languages",
-                "horilla.context_processors.recently_viewed_items",
-                "horilla.context_processors.unread_notifications",
-                "horilla.context_processors.menu_context_processor",
-                "horilla.context_processors.currency_context",
-                "horilla.context_processors.branding",
-            ],
-        },
+        "OPTIONS": {"context_processors": CONTEXT_PROCESSORS},
     },
 ]
 
@@ -184,6 +184,7 @@ ASGI_APPLICATION = "horilla.asgi.application"
 # -----------------------------------------------------------------------------
 CHANNEL_LAYERS = {
     "default": {
+        # "BACKEND": "channels.layers.InMemoryChannelLayer",
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         # "CONFIG": {
         #     "hosts": [("127.0.0.1", 6379)],  # Redis server
@@ -364,12 +365,12 @@ LANGUAGE_COOKIE_SAMESITE = "Lax"
 # -----------------------------------------------------------------------------
 LOGIN_URL = "/login/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-AUTH_USER_MODEL = "horilla_core.HorillaUser"
+AUTH_USER_MODEL = "core.HorillaUser"
 
 # -----------------------------------------------------------------------------
 # Email
 # -----------------------------------------------------------------------------
-EMAIL_BACKEND = "horilla_mail.horilla_backends.HorillaDefaultMailBackend"
+EMAIL_BACKEND = "horilla.contrib.mail.backends.HorillaDefaultMailBackend"
 
 DEFAULT_HOME_REDIRECT = "/dashboard/?section=home"
 
@@ -394,9 +395,9 @@ TIME_ZONE = "UTC"
 
 AUDITLOG_INCLUDE_ALL_MODELS = True
 AUDITLOG_EXCLUDE_TRACKING_MODELS = (
-    "horilla_core.RecentlyViewed",
-    "horilla_core.ActiveTab",
-    "horilla_core.ListColumnVisibility",
+    "core.RecentlyViewed",
+    "core.ActiveTab",
+    "core.ListColumnVisibility",
 )
 
 

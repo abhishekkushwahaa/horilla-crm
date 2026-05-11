@@ -26,7 +26,7 @@
 
                 <div class="flex items-center gap-4">
                     <div class="flex tablebtn">
-                        {% has_perm "horilla_automations.change_horillaautomation" as can_edit %}
+                        {% has_perm "automations.change_horillaautomation" as can_edit %}
                         {% if can_edit %}
                             <button
                                 class="w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center"
@@ -43,11 +43,11 @@
                                 >
                             </button>
                         {% endif %}
-                        {% has_perm "horilla_automations.delete_horillaautomation" as can_delete %}
+                        {% has_perm "automations.delete_horillaautomation" as can_delete %}
                         {% if can_delete %}
                             <button
                                 class="w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center"
-                                hx-get="{% url 'horilla_automations:automation_delete_view' automation.pk %}"
+                                hx-get="{% url 'automations:automation_delete_view' automation.pk %}"
                                 hx-target="#deleteModeBox"
                                 hx-swap="innerHTML"
                                 hx-trigger="click"

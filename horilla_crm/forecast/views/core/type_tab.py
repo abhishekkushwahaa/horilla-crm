@@ -4,6 +4,9 @@
 from django.contrib import messages
 from django.views.generic import TemplateView
 
+from horilla.contrib.core.models import FiscalYearInstance
+from horilla.contrib.core.services.fiscal_year_service import FiscalYearService
+
 # First-party / Horilla imports
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
@@ -13,8 +16,6 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import FiscalYearInstance
-from horilla_core.services.fiscal_year_service import FiscalYearService
 from horilla_crm.forecast.models import ForecastType
 from horilla_crm.forecast.views.core.helpers import (
     ForecastTypeTabHelpersMixin,
@@ -42,6 +43,7 @@ class ForecastTypeTabView(
     USERS_PER_PAGE = 10
 
     def get(self, request, *args, **kwargs):
+        """Enforce ownership permissions and render forecast type tab content."""
         user_id = request.GET.get("user_id")
         has_view_all = request.user.has_perm("opportunities.view_opportunity")
         has_view_own = request.user.has_perm("opportunities.view_own_opportunity")
@@ -59,6 +61,7 @@ class ForecastTypeTabView(
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """Assemble forecast type tab context for table and chart rendering."""
         context = super().get_context_data(**kwargs)
         forecast_type_id = kwargs.get("pk")
         try:
@@ -262,6 +265,7 @@ class ForecastChartsModalView(
     )
 
     def get_context_data(self, **kwargs):
+        """Build modal context with chart analysis for the selected forecast filters."""
         context = super().get_context_data(**kwargs)
         forecast_type_id = self.request.GET.get("forecast_type_id")
         fiscal_year_id = self.request.GET.get("fiscal_year_id")

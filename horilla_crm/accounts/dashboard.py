@@ -4,13 +4,14 @@
 import logging
 
 # Third-party imports (Django)
-from django.db.models import Count
 from django.utils.http import urlencode
 
+from horilla.contrib.dashboard.utils import DefaultDashboardGenerator
+from horilla.contrib.utils.methods import get_section_info_for_model
+
 # First-party / Horilla imports
+from horilla.db.models import Count
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
-from horilla_dashboard.utils import DefaultDashboardGenerator
-from horilla_utils.methods import get_section_info_for_model
 
 # Local application imports
 from .models import Account
@@ -101,6 +102,18 @@ def create_account_charts(self, queryset, model_info):
     return None
 
 
+def account_table_func(generator, model_info):
+    """Generate table context for all accounts."""
+    return generator.build_table_context(
+        model_info=model_info,
+        title="Accounts",
+        filter_kwargs={},
+        no_found_img="assets/img/not-found-list.svg",
+        no_record_msg="No accounts found.",
+        view_id="accounts_dashboard_list",
+    )
+
+
 DefaultDashboardGenerator.extra_models.append(
     {
         "model": Account,
@@ -109,5 +122,7 @@ DefaultDashboardGenerator.extra_models.append(
         "color": "indigo",
         "include_kpi": True,
         "chart_func": create_account_charts,
+        "table_func": account_table_func,
+        "table_fields_func": account_table_fields,
     }
 )

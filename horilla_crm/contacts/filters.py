@@ -4,8 +4,8 @@ Filters for the contacts app.
 This module defines filter classes used to search and filter contact records.
 """
 
-from horilla_core.mixins import OwnerFiltersetMixin
-from horilla_generics.filters import HorillaFilterSet
+from horilla.contrib.core.mixins import OwnerFiltersetMixin
+from horilla.contrib.generics.filters import HorillaFilterSet
 
 from .models import Contact
 

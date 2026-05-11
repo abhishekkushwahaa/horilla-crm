@@ -9,14 +9,14 @@ from django.conf import settings
 from django.utils.translation import get_language
 
 from horilla import __version__ as horilla_version
+from horilla.contrib.core.models import Company, RecentlyViewed
+from horilla.contrib.notifications.models import Notification
 from horilla.menu.floating_menu import get_floating_menu
 from horilla.menu.main_section_menu import get_main_section_menu
 from horilla.menu.my_settings_menu import get_my_settings_menu
 from horilla.menu.settings_menu import get_settings_menu
 from horilla.menu.sub_section_menu import get_sub_section_menu
 from horilla.utils.branding import load_branding
-from horilla_core.models import Company, RecentlyViewed
-from horilla_notifications.models import Notification
 
 
 def company_list(request):
@@ -97,7 +97,7 @@ def currency_context(request):
     if not request.user.is_authenticated:
         return {}
 
-    from horilla_core.models import MultipleCurrency
+    from horilla.contrib.core.models import MultipleCurrency
 
     user_currency = MultipleCurrency.get_user_currency(request.user)
     default_currency = None

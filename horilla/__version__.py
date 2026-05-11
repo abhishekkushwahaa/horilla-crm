@@ -2,13 +2,23 @@
 
 from django.utils.translation import gettext_lazy as _
 
-__version__ = "1.9.0"
+__version__ = "1.10.0"
 __module_name__ = _("Core System")
-__release_date__ = "17 April 2026"
+__release_date__ = ""
 __description__ = _(
     "Core system providing authentication, configuration, utilities, and platform-level services."
 )
 __icon__ = "assets/icons/logo.png"
+
+
+__1_10_0__ = _(
+    "Major platform 1.10 layout: support apps consolidated under the contrib namespace with "
+    "short Django app labels (activity, core, mail, theme, and related modules). "
+    "AppLauncher configs, imports, URL namespaces, static paths, and permission "
+    "or content-type strings updated to match the new labels. "
+    "Added sync tooling to align migration records, content types, audit "
+    "log references, and related data when upgrading existing databases."
+)
 
 
 __1_9_0__ = _(

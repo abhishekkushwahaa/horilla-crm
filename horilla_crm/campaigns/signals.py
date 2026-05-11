@@ -5,17 +5,20 @@ import logging
 
 # Third-party imports (Django)
 from django.db import transaction
-from django.db.models import Sum
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-# First-party / Horilla imports
 from horilla.auth.models import User
-from horilla_core.signals import company_currency_changed
+from horilla.contrib.core.signals import company_currency_changed
+from horilla.contrib.keys.models import ShortcutKey
+
+# First-party / Horilla imports
+from horilla.db.models import Sum
+
+# First-party / Horilla apps
 from horilla_crm.campaigns.models import Campaign, CampaignMember
 from horilla_crm.leads.models import Lead
 from horilla_crm.opportunities.models import Opportunity
-from horilla_keys.models import ShortcutKey
 
 logger = logging.getLogger(__name__)
 # Define your campaigns signals here
@@ -25,7 +28,7 @@ logger = logging.getLogger(__name__)
 def create_campaign_shortcuts(sender, instance, created, **kwargs):
     """Create default keyboard shortcuts for campaigns when a user is created."""
     predefined = [
-        {"page": "/campaigns/campaign-view/", "key": "C", "command": "alt"},
+        {"page": "crm/campaigns/campaign-view/", "key": "C", "command": "alt"},
     ]
 
     for item in predefined:

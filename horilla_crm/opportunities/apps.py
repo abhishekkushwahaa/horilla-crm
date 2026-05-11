@@ -13,7 +13,7 @@ class OpportunitiesConfig(AppLauncher):
     name = "horilla_crm.opportunities"
     verbose_name = _("Opportunities")
 
-    url_prefix = "opportunities/"
+    url_prefix = "crm/opportunities/"
     url_module = "horilla_crm.opportunities.urls"
     url_namespace = "opportunities"
 

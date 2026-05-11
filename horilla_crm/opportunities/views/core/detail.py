@@ -2,26 +2,25 @@
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import ForeignKey
 from django.utils.functional import cached_property  # type: ignore
 
-from horilla.http import Http404
-
-# First-party / Horilla imports
-from horilla.urls import reverse_lazy
-from horilla.utils.decorators import method_decorator, permission_required_or_denied
-from horilla.utils.translation import gettext_lazy as _
-from horilla_activity.views import HorillaActivitySectionView
-from horilla_cadences.views import CadenceRecordTabView
-from horilla_crm.opportunities.models import Opportunity
-from horilla_generics.mixins import RecentlyViewedMixin
-from horilla_generics.views import (
+from horilla.contrib.activity.views import HorillaActivitySectionView
+from horilla.contrib.generics.mixins import RecentlyViewedMixin
+from horilla.contrib.generics.views import (
     HorillaDetailSectionView,
     HorillaDetailTabView,
     HorillaDetailView,
     HorillaHistorySectionView,
     HorillaNotesAttachementSectionView,
 )
+from horilla.db.models import ForeignKey
+from horilla.http import Http404
+
+# First-party / Horilla imports
+from horilla.urls import reverse_lazy
+from horilla.utils.decorators import method_decorator, permission_required_or_denied
+from horilla.utils.translation import gettext_lazy as _
+from horilla_crm.opportunities.models import Opportunity
 
 from .base import OpportunityListView
 
@@ -273,12 +272,13 @@ class OpportunityDetailViewTabView(LoginRequiredMixin, HorillaDetailTabView):
 
     def _prepare_detail_tabs(self):
         self.object_id = self.request.GET.get("object_id")
+        self.model = Opportunity
         super()._prepare_detail_tabs()
 
     urls = {
         "details": "opportunities:opportunity_details_tab",
         "activity": "opportunities:opportunity_activity_detail_view",
-        "cadences": "opportunities:opportunity_cadences_tab",
+        "cadences": "cadences:opportunity_cadences_tab",
         "related_lists": "opportunities:opportunity_related_lists",
         "notes_attachments": "opportunities:opportunity_notes_attachments",
         "history": "opportunities:opportunity_history_tab_view",
@@ -322,19 +322,6 @@ class OpportunityActivityTabView(LoginRequiredMixin, HorillaActivitySectionView)
     """
 
     model = Opportunity
-
-
-@method_decorator(
-    permission_required_or_denied(
-        ["opportunities.view_opportunity", "opportunities.view_own_opportunity"]
-    ),
-    name="dispatch",
-)
-class OpportunityCadenceTabView(CadenceRecordTabView):
-    """Cadence tab view for opportunity detail."""
-
-    app_label = "opportunities"
-    model_name = "Opportunity"
 
 
 @method_decorator(

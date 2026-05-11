@@ -2,11 +2,19 @@
 
 from horilla.utils.translation import gettext_lazy as _
 
-__version__ = "1.4.0"
+__version__ = "1.10.0"
 __module_name__ = "CRM"
-__release_date__ = "17 April 2026"
+__release_date__ = ""
 __description__ = _("CRM module for managing leads, contacts, and opportunities.")
 __icon__ = "assets/icons/icon2.svg"
+
+__1_10_0__ = _(
+    "Aligned with platform 1.10: imports and integrations target contrib packages "
+    "and short Django app labels (core, generics, mail, activity, and other shared modules). "
+    "URL namespaces, static paths, permission strings, and ForeignKey string references "
+    "updated where they cross into contrib apps; the CRM module keeps its original app label "
+    "and database table prefix."
+)
 
 __1_4_0__ = _(
     "Enhanced CRM fixtures with additional fields. Improved UI refinements "

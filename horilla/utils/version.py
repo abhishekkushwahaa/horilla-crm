@@ -51,7 +51,7 @@ def get_module_version_info(module_name):
 
 
 def collect_all_versions():
-    """Collect version info for all top-level Horilla modules."""
+    """Collect version info for all Horilla modules (including nested ones)."""
 
     versions = [
         {
@@ -65,18 +65,23 @@ def collect_all_versions():
     ]
 
     seen = set()
-
+    seen.add("horilla.contrib.core")
     for app in settings.INSTALLED_APPS:
-        top_level = app.split(".")[0]
+        module_parts = app.split(".")
 
-        if top_level not in seen:
-            info = get_module_version_info(top_level)
+        # Try progressively deeper module paths
+        for i in range(len(module_parts), 0, -1):
+            module_path = ".".join(module_parts[:i])
+
+            if module_path in seen:
+                continue
+
+            info = get_module_version_info(module_path)
 
             if info:
                 versions.append(info)
-
-            seen.add(top_level)
-
+                seen.add(module_path)
+                break  # stop once the most specific match is found
     return {
         "module_versions": versions,
     }

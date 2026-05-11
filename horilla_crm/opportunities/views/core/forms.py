@@ -6,6 +6,10 @@ from django.utils.functional import cached_property  # type: ignore
 
 # First-party / Horilla imports
 from horilla.apps import apps
+from horilla.contrib.generics.views import (
+    HorillaMultiStepFormView,
+    HorillaSingleFormView,
+)
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
@@ -15,10 +19,11 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.opportunities.forms import OpportunityFormClass, OpportunitySingleForm
 from horilla_crm.opportunities.models import Opportunity, OpportunityStage
 from horilla_crm.opportunities.signals import set_opportunity_contact_id
-from horilla_generics.views import HorillaMultiStepFormView, HorillaSingleFormView
 
 
 @method_decorator(htmx_required, name="dispatch")

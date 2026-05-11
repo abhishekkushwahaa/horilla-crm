@@ -16,12 +16,15 @@ from colorfield.fields import ColorField
 from django.conf import settings
 from django.core.validators import EmailValidator
 from django.db import transaction
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 from django_countries.fields import CountryField
 
+from horilla.contrib.core.models import Company, HorillaCoreModel
+from horilla.contrib.mail.models import HorillaMailConfiguration
+from horilla.contrib.utils.methods import render_template
 from horilla.core.exceptions import ValidationError
 
 # First-party / Horilla imports
@@ -30,9 +33,6 @@ from horilla.registry.permission_registry import permission_exempt_model
 from horilla.urls import reverse_lazy
 from horilla.utils.choices import OPERATOR_CHOICES
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Company, HorillaCoreModel
-from horilla_mail.models import HorillaMailConfiguration
-from horilla_utils.methods import render_template
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,7 @@ class LeadStatus(HorillaCoreModel):
         return html
 
     def clean(self):
+        """Ensure lead stage order is a non-negative integer."""
         if self.order < 0:
             raise ValidationError(_("Order must be a non-negative integer."))
 
@@ -360,14 +361,6 @@ class Lead(HorillaCoreModel):
         This method to get change owner url
         """
         return reverse_lazy("leads:convert_lead", kwargs={"pk": self.pk})
-
-
-@receiver(pre_save, sender=Lead)
-def update_lead_score(sender, instance, **kwargs):
-    """Signal to update lead score before saving a Lead instance."""
-    from horilla_crm.leads.utils import compute_score
-
-    instance.lead_score = compute_score(instance)
 
 
 class EmailToLeadConfig(HorillaCoreModel):

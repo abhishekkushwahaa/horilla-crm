@@ -1,12 +1,16 @@
 """Signal handlers for accounts module."""
 
+# Third-party imports (Django)
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+# First party imports (Horilla)
 from horilla.auth.models import User
-from horilla_core.signals import company_currency_changed
+from horilla.contrib.core.signals import company_currency_changed
+from horilla.contrib.keys.models import ShortcutKey
+
+# First-party / Horilla apps
 from horilla_crm.accounts.models import Account
-from horilla_keys.models import ShortcutKey
 
 # Define your accounts signals here
 
@@ -15,7 +19,7 @@ from horilla_keys.models import ShortcutKey
 def create_account_shortcuts(sender, instance, created, **kwargs):
     """Create default keyboard shortcuts for accounts when a user is created."""
     predefined = [
-        {"page": "/accounts/accounts-view/", "key": "A", "command": "alt"},
+        {"page": "crm/accounts/accounts-view/", "key": "A", "command": "alt"},
     ]
 
     for item in predefined:

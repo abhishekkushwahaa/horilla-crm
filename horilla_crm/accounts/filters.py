@@ -4,9 +4,12 @@ Filters for the Accounts app.
 This module defines filter classes used to search and filter Account records.
 """
 
-from horilla_core.mixins import OwnerFiltersetMixin
-from horilla_crm.accounts.models import Account
-from horilla_generics.filters import HorillaFilterSet
+# First party imports (Horilla)
+from horilla.contrib.core.mixins import OwnerFiltersetMixin
+from horilla.contrib.generics.filters import HorillaFilterSet
+
+# Local imports
+from .models import Account
 
 
 # Define your accounts filters here

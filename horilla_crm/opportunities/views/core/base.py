@@ -7,20 +7,8 @@ from urllib.parse import urlencode
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.functional import cached_property  # type: ignore
 
-from horilla.http import HttpResponse
-
 # First-party / Horilla imports
-from horilla.urls import reverse_lazy
-from horilla.utils.decorators import (
-    htmx_required,
-    method_decorator,
-    permission_required,
-    permission_required_or_denied,
-)
-from horilla.utils.translation import gettext_lazy as _
-from horilla_crm.opportunities.filters import OpportunityFilter
-from horilla_crm.opportunities.models import Opportunity
-from horilla_generics.views import (
+from horilla.contrib.generics.views import (
     HorillaChartView,
     HorillaGroupByView,
     HorillaKanbanView,
@@ -30,8 +18,21 @@ from horilla_generics.views import (
     HorillaSplitView,
     HorillaView,
 )
-from horilla_generics.views.card import HorillaCardView
-from horilla_generics.views.timeline import HorillaTimelineView
+from horilla.contrib.generics.views.card import HorillaCardView
+from horilla.contrib.generics.views.timeline import HorillaTimelineView
+from horilla.http import HttpResponse
+from horilla.urls import reverse_lazy
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
+from horilla_crm.opportunities.filters import OpportunityFilter
+from horilla_crm.opportunities.models import Opportunity
 
 
 class OpportunityView(LoginRequiredMixin, HorillaView):

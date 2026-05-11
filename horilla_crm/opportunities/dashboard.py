@@ -4,13 +4,14 @@
 import logging
 
 # Third-party imports (Django)
-from django.db.models import Count
 from django.utils.http import urlencode
 
+from horilla.contrib.dashboard.utils import DefaultDashboardGenerator
+from horilla.contrib.utils.methods import get_section_info_for_model
+
 # First-party / Horilla imports
+from horilla.db.models import Count
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
-from horilla_dashboard.utils import DefaultDashboardGenerator
-from horilla_utils.methods import get_section_info_for_model
 
 # Local application imports
 from .models import Opportunity

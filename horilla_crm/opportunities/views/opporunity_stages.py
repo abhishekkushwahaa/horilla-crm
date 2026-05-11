@@ -18,9 +18,18 @@ from django.utils.html import format_html
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView, View
 
-from horilla.auth.models import User
-
 # First-party / Horilla imports
+from horilla.auth.models import User
+from horilla.contrib.core.models import Company
+from horilla.contrib.core.progress import ProgressStepsMixin
+from horilla.contrib.generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+    HorillaView,
+)
+from horilla.contrib.utils.middlewares import _thread_local
 from horilla.db import models
 from horilla.http import HttpNotFound, HttpResponse, JsonResponse
 from horilla.shortcuts import get_object_or_404, redirect, render
@@ -32,20 +41,12 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Company
-from horilla_core.progress import ProgressStepsMixin
+
+# First-party / Horilla apps
 from horilla_crm.opportunities.filters import OpportunityStageFilter
 from horilla_crm.opportunities.forms import OpportunityStageForm
 from horilla_crm.opportunities.models import OpportunityStage
 from horilla_crm.opportunities.signals import opp_stage_created
-from horilla_generics.views import (
-    HorillaListView,
-    HorillaNavView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-    HorillaView,
-)
-from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
 
@@ -563,7 +564,7 @@ class LoadOpportunityStagesView(LoginRequiredMixin, View):
             ),
             "hx_swap": "outerHTML" if initialization else "innerHTML",
             "hx_push_url": (
-                reverse_lazy("horilla_core:home_view") if initialization else "false"
+                reverse_lazy("core:home_view") if initialization else "false"
             ),
         }
 
@@ -686,7 +687,7 @@ class CustomOppStagesFormView(LoginRequiredMixin, View):
             ),
             "hx_swap": "outerHTML" if initialization else "innerHTML",
             "hx_push_url": (
-                reverse_lazy("horilla_core:home_view") if initialization else "false"
+                reverse_lazy("core:home_view") if initialization else "false"
             ),
         }
 
@@ -837,7 +838,7 @@ class SaveCustomOppStagesView(LoginRequiredMixin, View):
                 response["HX-Redirect"] = "/"
                 return response
 
-            branches_view_url = reverse_lazy("horilla_core:branches_view")
+            branches_view_url = reverse_lazy("core:branches_view")
             response_html = format_html(
                 "<span "
                 'hx-trigger="load" '
@@ -975,7 +976,7 @@ class CreateOppStageGroupView(LoginRequiredMixin, View):
                 response["HX-Redirect"] = "/"
                 return response
 
-            branches_view_url = reverse_lazy("horilla_core:branches_view")
+            branches_view_url = reverse_lazy("core:branches_view")
             response_html = format_html(
                 "<span "
                 'hx-trigger="load" '

@@ -1,8 +1,8 @@
 """Filters for Lead and LeadStatus models."""
 
-from horilla_core.mixins import OwnerFiltersetMixin
+from horilla.contrib.core.mixins import OwnerFiltersetMixin
+from horilla.contrib.generics.filters import HorillaFilterSet
 from horilla_crm.leads.models import Lead, LeadStatus, ScoringRule
-from horilla_generics.filters import HorillaFilterSet
 
 
 class LeadFilter(OwnerFiltersetMixin, HorillaFilterSet):

@@ -13,7 +13,7 @@ class AccountsConfig(AppLauncher):
     name = "horilla_crm.accounts"
     verbose_name = _("Accounts")
 
-    url_prefix = "accounts/"
+    url_prefix = "crm/accounts/"
     url_module = "horilla_crm.accounts.urls"
     url_namespace = "accounts"
 

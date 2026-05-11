@@ -1,7 +1,7 @@
 """
 API views for horilla_crm.contacts models
 
-This module mirrors horilla_core and accounts API patterns including search, filtering,
+This module mirrors core and accounts API patterns including search, filtering,
 bulk update, bulk delete, permissions, and documentation.
 """
 
@@ -11,9 +11,13 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, viewsets
 
-from horilla_core.api.docs import BULK_DELETE_DOCS, BULK_UPDATE_DOCS, SEARCH_FILTER_DOCS
-from horilla_core.api.mixins import BulkOperationsMixin, SearchFilterMixin
-from horilla_core.api.permissions import IsCompanyMember
+from horilla.contrib.core.api.docs import (
+    BULK_DELETE_DOCS,
+    BULK_UPDATE_DOCS,
+    SEARCH_FILTER_DOCS,
+)
+from horilla.contrib.core.api.mixins import BulkOperationsMixin, SearchFilterMixin
+from horilla.contrib.core.api.permissions import IsCompanyMember
 from horilla_crm.contacts.api.docs import (
     CONTACT_CREATE_DOCS,
     CONTACT_DETAIL_DOCS,
@@ -24,7 +28,7 @@ from horilla_crm.contacts.models import Contact
 
 logger = logging.getLogger(__name__)
 
-# Define common Swagger parameters and bodies consistent with horilla_core
+# Define common Swagger parameters and bodies consistent with core
 search_param = openapi.Parameter(
     "search",
     openapi.IN_QUERY,

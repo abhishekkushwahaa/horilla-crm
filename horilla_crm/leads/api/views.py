@@ -1,7 +1,7 @@
 """
 API views for horilla_crm.leads models
 
-This module mirrors horilla_core API patterns including search, filtering,
+This module mirrors core API patterns including search, filtering,
 bulk update, bulk delete, permissions, and documentation.
 """
 
@@ -13,9 +13,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 # First-party / Horilla imports
-from horilla_core.api.docs import BULK_DELETE_DOCS, BULK_UPDATE_DOCS
-from horilla_core.api.mixins import BulkOperationsMixin, SearchFilterMixin
-from horilla_core.api.permissions import IsCompanyMember
+from horilla.contrib.core.api.docs import BULK_DELETE_DOCS, BULK_UPDATE_DOCS
+from horilla.contrib.core.api.mixins import BulkOperationsMixin, SearchFilterMixin
+from horilla.contrib.core.api.permissions import IsCompanyMember
 from horilla_crm.leads.api.docs import (
     LEAD_BY_OWNER_DOCS,
     LEAD_BY_SOURCE_DOCS,
@@ -39,7 +39,7 @@ from horilla_crm.leads.api.serializers import (
 )
 from horilla_crm.leads.models import Lead, LeadStatus, ScoringCriterion, ScoringRule
 
-# Define common Swagger parameters and bodies consistent with horilla_core
+# Define common Swagger parameters and bodies consistent with core
 search_param = openapi.Parameter(
     "search",
     openapi.IN_QUERY,

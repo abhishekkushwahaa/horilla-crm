@@ -123,6 +123,6 @@ class OpportunitiesSettings:
             "hx-push-url": "true",
             "hx-select": "#big-deal-alert-view",
             "hx-select-oob": "#settings-sidebar",
-            "perm": "horilla_automations.view_horillaautomation",
+            "perm": "automations.view_horillaautomation",
         },
     ]

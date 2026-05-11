@@ -8,10 +8,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.functional import cached_property  # type: ignore
 from django.views import View
 
+# First-party / Horilla imports
+from horilla.contrib.core.utils import is_owner
+from horilla.contrib.generics.views import (
+    HorillaRelatedListSectionView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+)
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
-
-# First-party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -19,18 +24,14 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.utils import is_owner
+
+# First-party / Horilla apps
 from horilla_crm.contacts.models import ContactAccountRelationship
 from horilla_crm.opportunities.models import (
     Opportunity,
     OpportunityContactRole,
     OpportunitySettings,
     OpportunityStage,
-)
-from horilla_generics.views import (
-    HorillaRelatedListSectionView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
 )
 
 
@@ -213,7 +214,7 @@ class OpportunityRelatedLists(LoginRequiredMixin, HorillaRelatedListSectionView)
                         self.model._meta.get_field("opportunity_team_members")
                         .related_model._meta.get_field("team_role")
                         .verbose_name,
-                        "get_team_role_display",
+                        "team_role",
                     ),
                 ],
                 "can_add": False,

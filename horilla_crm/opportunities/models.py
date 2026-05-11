@@ -10,18 +10,25 @@ from django.dispatch import receiver
 
 # First-party / Horilla imports
 from horilla import settings
+from horilla.contrib.core.models import (
+    Company,
+    CustomerRole,
+    HorillaCoreModel,
+    TeamRole,
+)
+from horilla.contrib.utils.methods import render_template
+from horilla.contrib.utils.middlewares import _thread_local
 from horilla.core.exceptions import ValidationError
 from horilla.db import models
 from horilla.registry.permission_registry import permission_exempt_model
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Company, CustomerRole, HorillaCoreModel, TeamRole
+
+# First-party / Horilla apps
 from horilla_crm.accounts.models import Account
 from horilla_crm.campaigns.models import Campaign
 from horilla_crm.contacts.models import Contact
 from horilla_crm.leads.utils import compute_score
-from horilla_utils.methods import render_template
-from horilla_utils.middlewares import _thread_local
 
 
 class OpportunityStage(HorillaCoreModel):
@@ -65,6 +72,7 @@ class OpportunityStage(HorillaCoreModel):
         return html
 
     def clean(self):
+        """Validate that opportunity stage order is non-negative."""
         if self.order < 0:
             raise ValidationError(_("Order must be a non-negative integer."))
 

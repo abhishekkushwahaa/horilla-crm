@@ -6,8 +6,8 @@ from django.utils.functional import cached_property
 
 # First-party / Horilla imports
 from horilla.auth.models import User
+from horilla.contrib.core.models import Company, FiscalYearInstance, Period
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Company, FiscalYearInstance, Period
 from horilla_crm.forecast.models import Forecast, ForecastTarget
 from horilla_crm.forecast.utils import ForecastCalculator
 

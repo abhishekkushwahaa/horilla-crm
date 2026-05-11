@@ -36,6 +36,7 @@ class LeadConversionView(LoginRequiredMixin, FormView):
     form_class = LeadConversionForm
 
     def dispatch(self, request, *args, **kwargs):
+        """Load the lead and short-circuit with an HTMX error response if missing."""
         try:
             self.lead = Lead.objects.get(pk=self.kwargs["pk"])
         except Exception as e:
@@ -46,9 +47,11 @@ class LeadConversionView(LoginRequiredMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
+        """Return redirect target after successful conversion."""
         return reverse("leads:leads_detail", kwargs={"pk": self.lead.pk})
 
     def get_form_kwargs(self):
+        """Inject lead and optional selected account into form kwargs."""
         kwargs = super().get_form_kwargs()
         kwargs["lead"] = self.lead
 
@@ -63,6 +66,7 @@ class LeadConversionView(LoginRequiredMixin, FormView):
         return kwargs
 
     def get_context_data(self, **kwargs):
+        """Populate template context with lead and selected conversion actions."""
         context = super().get_context_data(**kwargs)
         context["lead"] = self.lead
         context["account_action"] = self.request.GET.get(
@@ -79,6 +83,7 @@ class LeadConversionView(LoginRequiredMixin, FormView):
         return context
 
     def get(self, request, *args, **kwargs):
+        """Handle permission checks and HTMX partial rendering for conversion form."""
         pk = self.kwargs.get("pk")
         if pk:
             try:
@@ -115,6 +120,7 @@ class LeadConversionView(LoginRequiredMixin, FormView):
         return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
+        """Convert lead entities in a transaction and return success response."""
         with transaction.atomic():
             try:
                 lead_status = LeadStatus.objects.filter(is_final=True).first()
@@ -235,6 +241,7 @@ class LeadConversionView(LoginRequiredMixin, FormView):
         return opportunity
 
     def get_initial(self):
+        """Provide default create-new options for conversion sections."""
         return {
             "account_action": "create_new",
             "contact_action": "create_new",
@@ -242,6 +249,7 @@ class LeadConversionView(LoginRequiredMixin, FormView):
         }
 
     def form_invalid(self, form):
+        """Re-render form with validation errors, including HTMX responses."""
         if "HTTP_HX_REQUEST" in self.request.META:
             # Re-render the entire form with errors for HTMX requests
             context = self.get_context_data(form=form)

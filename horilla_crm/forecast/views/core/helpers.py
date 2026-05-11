@@ -2,8 +2,8 @@
 
 # First-party / Horilla imports
 from horilla.auth.models import User
+from horilla.contrib.core.models import Period
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Period
 from horilla_crm.forecast.models import Forecast
 
 

@@ -4,13 +4,14 @@
 import logging
 
 # Third-party imports (Django)
-from django.db.models import Count
 from django.utils.http import urlencode
 
+from horilla.contrib.dashboard.utils import DefaultDashboardGenerator
+from horilla.contrib.utils.methods import get_section_info_for_model
+
 # First-party / Horilla imports
+from horilla.db.models import Count
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
-from horilla_dashboard.utils import DefaultDashboardGenerator
-from horilla_utils.methods import get_section_info_for_model
 
 # Local application imports
 from .models import Campaign
@@ -141,6 +142,18 @@ def create_campaign_charts(self, queryset, model_info):
     return None
 
 
+def campaign_table_func(generator, model_info):
+    """Generate table context for all campaigns."""
+    return generator.build_table_context(
+        model_info=model_info,
+        title="Campaigns",
+        filter_kwargs={},
+        no_found_img="assets/img/not-found-list.svg",
+        no_record_msg="No campaigns found.",
+        view_id="campaigns_dashboard_list",
+    )
+
+
 DefaultDashboardGenerator.extra_models.append(
     {
         "model": Campaign,
@@ -149,5 +162,7 @@ DefaultDashboardGenerator.extra_models.append(
         "color": "orange",
         "include_kpi": True,
         "chart_func": create_campaign_charts,
+        "table_func": campaign_table_func,
+        "table_fields_func": campaign_table_fields,
     }
 )

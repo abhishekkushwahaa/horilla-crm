@@ -8,9 +8,11 @@ Features: Period-based forecasts, trend analysis, user/aggregated views, optimiz
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 
-from horilla.auth.models import User
-
 # First-party / Horilla imports
+from horilla.auth.models import User
+from horilla.contrib.core.models import FiscalYearInstance, Period
+from horilla.contrib.core.services.fiscal_year_service import FiscalYearService
+from horilla.contrib.generics.views import HorillaTabView
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -18,10 +20,9 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import FiscalYearInstance, Period
-from horilla_core.services.fiscal_year_service import FiscalYearService
+
+# First-party / Horilla apps
 from horilla_crm.forecast.models import ForecastType
-from horilla_generics.views import HorillaTabView
 
 
 class ForecastView(LoginRequiredMixin, TemplateView):
@@ -30,6 +31,7 @@ class ForecastView(LoginRequiredMixin, TemplateView):
     template_name = "forecast_view.html"
 
     def get_context_data(self, **kwargs):
+        """Prepare forecast dashboard context with fiscal-year navigation metadata."""
         context = super().get_context_data(**kwargs)
 
         company = (
@@ -111,6 +113,7 @@ class ForecastNavbarView(LoginRequiredMixin, TemplateView):
     template_name = "forecast_navbar.html"
 
     def get_context_data(self, **kwargs):
+        """Build navbar/filter context including permissions and period range defaults."""
         context = super().get_context_data(**kwargs)
 
         # Automatically check and update fiscal years before displaying
@@ -266,6 +269,7 @@ class ForecastTabView(LoginRequiredMixin, HorillaTabView):
     tab_class = "h-[calc(_100vh_-_290px_)] overflow-x-auto custom-scroll"
 
     def setup(self, request, *args, **kwargs):
+        """Initialize tab configuration before rendering the tab view."""
         super().setup(request, *args, **kwargs)
         self.tabs = self.get_forecast_tabs()
 

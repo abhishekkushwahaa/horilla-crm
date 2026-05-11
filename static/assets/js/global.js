@@ -281,14 +281,18 @@ const SidebarManager = {
     getAppLabelFromUrl() {
         const path = window.location.pathname;
         const pathParts = path.split('/').filter(part => part.length > 0);
-        return pathParts[0] || 'horilla_core';
+        // Match against actual sidebar link IDs to skip common URL prefixes (e.g. "crm/")
+        const $links = $("ul a.sidebar-link");
+        for (const part of pathParts) {
+            if ($links.filter(`#${CSS.escape(part)}`).length > 0) return part;
+        }
+        return pathParts[0] || 'core';
     },
 
-    /** Find a subsection link whose href path matches or is a prefix of the current path, or whose first path segment matches (e.g. detail view under same app as list link). */
+    /** Find a subsection link whose href path matches or is a prefix of the current path, or whose base path (all but last segment) is a prefix of the current path. */
     getSubsectionLinkMatchingUrl() {
         const currentPath = window.location.pathname;
         const currentNorm = currentPath.replace(/\/+$/, "") || "/";
-        const currentFirst = (currentNorm.split("/").filter(Boolean))[0] || "";
         let $exactFound = null;
         let exactLongest = 0;
         let $segmentFound = null;
@@ -299,13 +303,15 @@ const SidebarManager = {
             const linkPath = href.indexOf("?") >= 0 ? href.split("?")[0] : href;
             const path = linkPath.startsWith("http") ? new URL(linkPath).pathname : (linkPath.startsWith("/") ? linkPath : "/" + linkPath);
             const pathNorm = path.replace(/\/+$/, "") || "/";
-            const linkFirst = (pathNorm.split("/").filter(Boolean))[0] || "";
             const exactMatch = currentNorm === pathNorm || (currentNorm.length > pathNorm.length && currentNorm.indexOf(pathNorm) === 0 && (pathNorm === "/" || currentNorm.charAt(pathNorm.length) === "/"));
-            const firstSegmentMatch = linkFirst && currentFirst === linkFirst;
+
+            const linkSegments = pathNorm.split("/").filter(Boolean);
+            const linkBasePath = linkSegments.length > 1 ? "/" + linkSegments.slice(0, -1).join("/") : null;
+            const appScopeMatch = linkBasePath && (currentNorm === linkBasePath || currentNorm.startsWith(linkBasePath + "/"));
             if (exactMatch && pathNorm.length >= exactLongest) {
                 exactLongest = pathNorm.length;
                 $exactFound = $(this);
-            } else if (firstSegmentMatch && pathNorm.length >= segmentLongest) {
+            } else if (appScopeMatch && pathNorm.length >= segmentLongest) {
                 segmentLongest = pathNorm.length;
                 $segmentFound = $(this);
             }

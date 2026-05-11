@@ -14,23 +14,31 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
-
-# First-party / Horilla imports
-from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.views.generic import DetailView, TemplateView, View
 
+# First-party / Horilla imports
 from horilla.auth.models import User
+from horilla.contrib.generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+    HorillaView,
+)
+from horilla.contrib.utils.middlewares import _thread_local
 from horilla.http import HttpNotFound, HttpResponse, RefreshResponse
 from horilla.shortcuts import get_object_or_404, render
-from horilla.urls import reverse_lazy
+from horilla.urls import reverse, reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
     method_decorator,
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.opportunities.filters import (
     OpportunityTeamFilter,
     OpportunityTeamMembersFilter,
@@ -49,14 +57,6 @@ from horilla_crm.opportunities.models import (
     OpportunityTeam,
     OpportunityTeamMember,
 )
-from horilla_generics.views import (
-    HorillaListView,
-    HorillaNavView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-    HorillaView,
-)
-from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class TeamSellingRequiredMixin:
     """
 
     def dispatch(self, request, *args, **kwargs):
-        """Check if team selling is enabled before allowing access to the view."""
+        """Block access when team selling is disabled for the active company."""
         if not OpportunitySettings.is_team_selling_enabled(
             getattr(request, "active_company", None)
         ):
@@ -301,7 +301,7 @@ class OpportunityTeamFormView(
         self.request.session.modified = True
         messages.success(
             self.request,
-            f"{self.model._meta.verbose_name.title()} {'updated' if self.kwargs.get('pk') else 'created'} successfully!",
+            f"{self.model._meta.verbose_name.title()} {'updated' if self.kwargs.get('pk') else 'created'} successfully.",
         )
         return HttpResponse("<script>$('#reloadButton').click();closeModal();</script>")
 
@@ -329,6 +329,7 @@ class OpportunityTeamDetailView(LoginRequiredMixin, DetailView):
     model = OpportunityTeam
 
     def dispatch(self, request, *args, **kwargs):
+        """Validate access and object existence before rendering detail view."""
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
         if not OpportunitySettings.is_team_selling_enabled(
@@ -359,6 +360,7 @@ class OpportunityTeamDetailView(LoginRequiredMixin, DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """Provide selected team details and member list for detail template."""
         context = super().get_context_data(**kwargs)
         current_obj = self.get_object()
         members = DefaultOpportunityMember.objects.filter(team=current_obj)
@@ -901,6 +903,7 @@ class TeamSellingSetupView(LoginRequiredMixin, TemplateView):
     template_name = "opportunity_team/team_selling_setup.html"
 
     def get_context_data(self, **kwargs):
+        """Build setup page context with current company team-selling settings."""
         context = super().get_context_data(**kwargs)
         company = self.request.active_company
         settings = OpportunitySettings.get_settings(company)
@@ -930,7 +933,7 @@ class ToggleTeamSellingView(LoginRequiredMixin, View):
             messages.success(
                 request,
                 _(
-                    "Team Selling has been enabled successfully! "
+                    "Team Selling has been enabled successfully. "
                     "Users can now create opportunity teams and add team members."
                 ),
             )

@@ -9,12 +9,14 @@ from django.dispatch import receiver
 
 # First-party / Horilla imports
 from horilla.auth.models import User
-from horilla_core.models import Period
-from horilla_core.signals import company_currency_changed
+from horilla.contrib.core.models import Period
+from horilla.contrib.core.signals import company_currency_changed
+from horilla.contrib.keys.models import ShortcutKey
+
+# First-party / Horilla apps
 from horilla_crm.forecast.models import Forecast, ForecastType
 from horilla_crm.forecast.utils import ForecastCalculator
 from horilla_crm.opportunities.models import Opportunity
-from horilla_keys.models import ShortcutKey
 
 
 @receiver(company_currency_changed)
@@ -310,7 +312,7 @@ def update_forecast_on_opportunity_delete(sender, instance, **kwargs):
 def create_forecast_shortcuts(sender, instance, created, **kwargs):
     """Create default keyboard shortcuts for forecast when a user is created."""
     predefined = [
-        {"page": "/forecast/forecast-view/", "key": "F", "command": "alt"},
+        {"page": "crm/forecast/forecast-view/", "key": "F", "command": "alt"},
     ]
 
     for item in predefined:

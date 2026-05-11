@@ -11,9 +11,13 @@ python manage.py recalculate_forecasts --fiscal-year-id=5  # Specific fiscal yea
 python manage.py recalculate_forecasts --forecast-type-id=2  # Specific forecast type
 """
 
+# Third-party imports (Django)
 from django.core.management.base import BaseCommand
-from django.db.models import Q
 
+# First party imports (Horilla)
+from horilla.db.models import Q
+
+# First-party / Horilla apps
 from horilla_crm.forecast.models import Forecast
 from horilla_crm.forecast.utils import ForecastCalculator
 
@@ -208,7 +212,7 @@ class Command(BaseCommand):
 
         # Summary
         self.stdout.write(self.style.SUCCESS("\n" + "=" * 50))
-        self.stdout.write(self.style.SUCCESS("Recalculation Complete!"))
+        self.stdout.write(self.style.SUCCESS("Recalculation Complete."))
         self.stdout.write(f"Total forecasts processed: {updated_count}")
         if error_count > 0:
             self.stdout.write(self.style.ERROR(f"Errors encountered: {error_count}"))

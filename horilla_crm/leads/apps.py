@@ -13,7 +13,7 @@ class LeadsConfig(AppLauncher):
     name = "horilla_crm.leads"
     verbose_name = _("Leads")
 
-    url_prefix = "leads/"
+    url_prefix = "crm/leads/"
     url_module = "horilla_crm.leads.urls"
     url_namespace = "leads"
 

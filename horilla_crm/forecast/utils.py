@@ -14,12 +14,13 @@ Features:
 - Caches condition queries for efficiency.
 """
 
-# Third party imports (Django)
-from django.db.models import Q, Sum
+from horilla.auth.models import User
+from horilla.contrib.core.models import FiscalYearInstance, Period
 
 # First party / Horilla imports
-from horilla.auth.models import User
-from horilla_core.models import FiscalYearInstance, Period
+from horilla.db.models import Q, Sum
+
+# First-party / Horilla apps
 from horilla_crm.forecast.models import Forecast, ForecastTarget, ForecastType
 from horilla_crm.opportunities.models import Opportunity
 
@@ -400,6 +401,15 @@ class ForecastCalculator:
                 forecast.target_quantity = self.get_target_for_period(
                     user, period, "quantity"
                 )
+
+            update_fields = [
+                "pipeline_quantity",
+                "best_case_quantity",
+                "commit_quantity",
+                "closed_quantity",
+                "actual_quantity",
+                "target_quantity",
+            ]
         else:
             forecast.pipeline_amount = calculated_data["pipeline"]
             forecast.best_case_amount = calculated_data["best_case"]
@@ -412,7 +422,16 @@ class ForecastCalculator:
                     user, period, "amount"
                 )
 
-        forecast.save()
+            update_fields = [
+                "pipeline_amount",
+                "best_case_amount",
+                "commit_amount",
+                "closed_amount",
+                "actual_amount",
+                "target_amount",
+            ]
+
+        forecast.save(update_fields=update_fields)
         return forecast
 
     def calculate_forecast_values(self, user, period, forecast_type):

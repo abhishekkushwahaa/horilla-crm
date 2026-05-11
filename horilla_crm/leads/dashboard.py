@@ -1,13 +1,14 @@
 """Dashboard utilities for leads module."""
 
 # Third-party imports (Django)
-from django.db.models import Avg, Count
 from django.utils.http import urlencode
 
+from horilla.contrib.dashboard.utils import DefaultDashboardGenerator
+from horilla.contrib.utils.methods import get_section_info_for_model
+
 # First-party / Horilla imports
+from horilla.db.models import Count
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
-from horilla_dashboard.utils import DefaultDashboardGenerator
-from horilla_utils.methods import get_section_info_for_model
 
 # Local application imports
 from .models import Lead
@@ -15,7 +16,7 @@ from .models import Lead
 
 def create_lead_source_charts(self, queryset, model_info):
     """
-    Lead-specific charts moved out of horilla_dashboard.
+    Lead-specific charts moved out of horilla.contrib.dashboard.
     """
     try:
         # ---- lead source chart ----
@@ -169,53 +170,18 @@ def lead_kpi_cards(generator, model_info):
     model_class = model_info["model"]
     qs = generator.get_queryset(model_class)
     section_info = get_section_info_for_model(model_class)
-    total = qs.count()
     open_qs = qs.filter(is_convert=False) if hasattr(model_class, "is_convert") else qs
     open_count = open_qs.count()
 
-    avg_emp_raw = open_qs.aggregate(avg=Avg("no_of_employees"))["avg"]
-    if avg_emp_raw is None:
-        avg_emp = 0.0
-    else:
-        avg_emp = round(float(avg_emp_raw), 1)
-
-    in_final_stage = 0
-    if hasattr(model_class, "lead_status"):
-        in_final_stage = qs.filter(lead_status__is_final=True).count()
-
     return [
         {
-            "title": "Open pipeline",
+            "title": "Total Leads",
             "value": open_count,
             "icon": "fa-layer-group",
             "color": "blue",
             "url": section_info["url"],
             "section": section_info["section"],
         },
-        # {
-        #     "title": "Total Leads",
-        #     "value": total,
-        #     "icon": "fa-user-plus",
-        #     "color": "yellow",
-        #     "url": section_info["url"],
-        #     "section": section_info["section"],
-        # },
-        # {
-        #     "title": "Avg Employee",
-        #     "value": avg_emp,
-        #     "icon": "fa-chart-line",
-        #     "color": "teal",
-        #     "url": section_info["url"],
-        #     "section": section_info["section"],
-        # },
-        # {
-        #     "title": "In final stage",
-        #     "value": in_final_stage,
-        #     "icon": "fa-flag-checkered",
-        #     "color": "purple",
-        #     "url": section_info["url"],
-        #     "section": section_info["section"],
-        # },
     ]
 
 

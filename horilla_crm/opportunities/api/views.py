@@ -1,7 +1,7 @@
 """
 API views for horilla_crm.opportunities models
 
-This module mirrors horilla_core API patterns including search, filtering,
+This module mirrors core API patterns including search, filtering,
 bulk update, bulk delete, permissions, and documentation.
 """
 
@@ -10,8 +10,8 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from horilla_core.api.mixins import BulkOperationsMixin, SearchFilterMixin
-from horilla_core.api.permissions import IsCompanyMember
+from horilla.contrib.core.api.mixins import BulkOperationsMixin, SearchFilterMixin
+from horilla.contrib.core.api.permissions import IsCompanyMember
 from horilla_crm.opportunities.api.serializers import (
     DefaultOpportunityMemberSerializer,
     OpportunitySerializer,

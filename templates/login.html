@@ -92,7 +92,7 @@
                         {{ LOGIN_TAG_LINE }}
                     </p>
 
-                    <form method="post" action="{% url 'horilla_core:login' %}">
+                    <form method="post" action="{% url 'core:login' %}">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
 
@@ -144,7 +144,7 @@
                             <div class="flex justify-end">
                                 <button
                                     type="button"
-                                    hx-get="{% url 'horilla_core:forgot_password' %}"
+                                    hx-get="{% url 'core:forgot_password' %}"
                                     hx-target="#sec1"
                                     hx-select="#sec2"
                                     hx-push-url="true"
@@ -169,7 +169,7 @@
                         <div class="grid grid-cols-2 gap-2 mt-5">
                             <button
                                 class="cursor-pointer btn-with-icon flex gap-3 text-sm px-[15px] py-[13px] rounded-md text-[#34c558] bg-[#e6fff5] hover:bg-[#34c558] hover:text-[white] transition duration-300 whitespace-nowrap"
-                                hx-get="{% url 'horilla_core:load_data' %}"
+                                hx-get="{% url 'core:load_data' %}"
                                 hx-target="#sec1"
                                 hx-swap="outerHTML"
                                 hx-push-url="true"
@@ -180,7 +180,7 @@
                             </button>
                             <button
                                 class="btn-with-icon flex gap-3 text-sm px-[15px] py-[13px] rounded-md text-[#E54F38] bg-[#ffefed] hover:bg-[#e54f38] hover:text-[white] transition duration-300 cursor-pointer whitespace-nowrap"
-                                hx-get="{% url 'horilla_core:initialize_database' %}"
+                                hx-get="{% url 'core:initialize_database' %}"
                                 hx-target="#sec1"
                                 hx-swap="outerHTML"
                                 hx-push-url="true"

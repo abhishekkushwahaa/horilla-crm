@@ -59,6 +59,7 @@ class LeadFormBuilderView(LoginRequiredMixin, TemplateView):
     action = None  # allow parameter
 
     def get_context_data(self, **kwargs):
+        """Build form-builder context with lead fields and available owners."""
         context = super().get_context_data(**kwargs)
 
         # Get all Lead model fields
@@ -198,6 +199,7 @@ class SaveLeadFormView(LoginRequiredMixin, FormView):
         return LeadCaptureFormForm
 
     def form_valid(self, form):
+        """Validate, save, and generate embed HTML for lead capture form config."""
         # Validate lead owner
         lead_owner = self.request.POST.get("lead_owner")
         if not lead_owner:
@@ -319,6 +321,7 @@ class SaveLeadFormView(LoginRequiredMixin, FormView):
         return RedirectResponse(request=self.request, redirect_to=self.success_url)
 
     def form_invalid(self, form):
+        """Re-render builder with errors, preserving submitted data for HTMX."""
         if self.request.headers.get("HX-Request"):
             # Get lead fields for the form builder
             lead_fields = []
@@ -444,6 +447,7 @@ class PublicLeadFormView(CreateView):
             ) from e
 
     def get_context_data(self, **kwargs):
+        """Populate public form context from stored lead-capture configuration."""
         context = super().get_context_data(**kwargs)
         form_id = self.kwargs.get("form_id")
 
@@ -484,6 +488,7 @@ class PublicLeadFormView(CreateView):
         return context
 
     def form_valid(self, form):
+        """Create a lead and return HTMX redirect or success fragment."""
         form_id = self.kwargs.get("form_id")
         form_config = LeadCaptureForm.objects.get(id=form_id)
         form.instance.lead_owner = form_config.lead_owner

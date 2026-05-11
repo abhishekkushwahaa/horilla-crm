@@ -11,15 +11,15 @@ from decimal import Decimal
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal, receiver
 
+# First-party / Horilla imports
 from horilla.apps import apps
 from horilla.auth.models import User
-
-# First-party / Horilla imports
+from horilla.contrib.core.models import TeamRole
+from horilla.contrib.core.signals import company_currency_changed
+from horilla.contrib.keys.models import ShortcutKey
 from horilla.db import models
 from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
-from horilla_core.models import TeamRole
-from horilla_core.signals import company_currency_changed
 from horilla_crm.leads.signals import lead_stage_created
 from horilla_crm.opportunities.models import (
     Opportunity,
@@ -29,7 +29,6 @@ from horilla_crm.opportunities.models import (
     OpportunitySplitType,
     OpportunityTeamMember,
 )
-from horilla_keys.models import ShortcutKey
 
 _thread_locals = threading.local()
 
@@ -110,7 +109,7 @@ def update_crm_on_currency_change(sender, **kwargs):
 def create_opportunity_shortcuts(sender, instance, created, **kwargs):
     """Create default keyboard shortcuts for opportunities when a user is created."""
     predefined = [
-        {"page": "/opportunities/opportunities-view/", "key": "O", "command": "alt"},
+        {"page": "crm/opportunities/opportunities-view/", "key": "O", "command": "alt"},
     ]
 
     for item in predefined:

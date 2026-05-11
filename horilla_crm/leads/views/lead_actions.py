@@ -2,11 +2,15 @@
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils.functional import cached_property  # type: ignore
-
-from horilla.http import HttpResponse
+from django.utils.functional import cached_property
 
 # First-party / Horilla imports
+from horilla.contrib.generics.views import (
+    HorillaMultiStepFormView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+)
+from horilla.http import HttpResponse
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -14,14 +18,10 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_crm.leads.forms import LeadSingleForm  # type: ignore
-from horilla_crm.leads.forms import LeadFormClass
+
+# First-party / Horilla apps
+from horilla_crm.leads.forms import LeadFormClass, LeadSingleForm
 from horilla_crm.leads.models import Lead, LeadStatus
-from horilla_generics.views import (
-    HorillaMultiStepFormView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-)
 
 
 @method_decorator(htmx_required, name="dispatch")

@@ -13,13 +13,13 @@ from django.conf import settings
 from django.forms import ValidationError
 
 from horilla.apps import apps
+from horilla.contrib.core.models import HorillaCoreModel
+from horilla.contrib.utils.middlewares import _thread_local
 
 # First-party / Horilla imports
 from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import HorillaCoreModel
-from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
 
@@ -398,6 +398,9 @@ class Campaign(HorillaCoreModel):
 
         return reverse_lazy("campaigns:campaign_detail_view", kwargs={"pk": self.pk})
 
+    def get_detail_url(self):
+        return self.get_detail_view_url()
+
     def get_duplicate_url(self):
         """
         This method to get edit url
@@ -477,7 +480,7 @@ class Campaign(HorillaCoreModel):
         Recalculate all campaign metrics and update the fields.
         Useful for migrations or manual corrections.
         """
-        from django.db.models import Sum
+        from horilla.db.models import Sum
 
         # Leads and converted leads
         self.leads_in_campaign = self.members.filter(member_type="lead").count()

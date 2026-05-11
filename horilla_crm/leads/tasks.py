@@ -11,11 +11,11 @@ from datetime import datetime
 import requests
 from celery import shared_task
 
+# First-party / Horilla imports
+from horilla.contrib.mail.views.outlook import refresh_outlook_token
+
 # Local application imports
 from horilla_crm.leads.models import EmailToLeadConfig, Lead, LeadStatus
-
-# First-party / Horilla imports
-from horilla_mail.views.horilla_outlook import refresh_outlook_token
 
 logger = logging.getLogger(__name__)
 

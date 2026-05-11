@@ -9,15 +9,21 @@ from functools import cached_property
 # Third party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
 
-from horilla.auth.models import User
-
 # First-party / Horilla imports
-from horilla.http import HttpResponse
+from horilla.auth.models import User
+from horilla.contrib.core.models import Period, Role
+from horilla.contrib.generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+    HorillaView,
+)
+from horilla.http import HttpResponse, HttpResponseRedirect
 from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
@@ -27,17 +33,11 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Period, Role
+
+# First-party / Horilla apps
 from horilla_crm.forecast.filters import ForecastTargetFilter
 from horilla_crm.forecast.forms import ForecastTargetForm
 from horilla_crm.forecast.models import ForecastTarget, ForecastType
-from horilla_generics.views import (
-    HorillaListView,
-    HorillaNavView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-    HorillaView,
-)
 
 
 class ForecastTargetView(LoginRequiredMixin, HorillaView):
@@ -50,6 +50,7 @@ class ForecastTargetView(LoginRequiredMixin, HorillaView):
     filters_url = reverse_lazy("forecast:forecast_target_filters_view")
 
     def get(self, request, *args, **kwargs):
+        """Validate filter query params and redirect when invalid values are supplied."""
         raw_forecast_type = request.GET.get("forecast_type")
         raw_period = request.GET.get("period")
 
@@ -93,6 +94,7 @@ class ForecastTargetView(LoginRequiredMixin, HorillaView):
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """Build filter context with default forecast type and period selections."""
 
         context = super().get_context_data(**kwargs)
         company = getattr(self.request, "active_company", None)
@@ -150,6 +152,7 @@ class ForecastTargetFiltersView(LoginRequiredMixin, TemplateView):
     list_url = reverse_lazy("forecast:forecast_target_list_view")
 
     def get_context_data(self, **kwargs):
+        """Populate forecast-target filter dropdown context and defaults."""
 
         context = super().get_context_data(**kwargs)
 

@@ -1,4 +1,4 @@
-"""
+﻿"""
 This view handles the methods for team role view
 """
 
@@ -13,9 +13,15 @@ from django.utils.functional import cached_property
 from django.views import View
 from django.views.generic import DetailView
 
-from horilla.http import HttpNotFound, HttpResponse, RefreshResponse
-
 # First-party / Horilla imports
+from horilla.contrib.generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+    HorillaView,
+)
+from horilla.http import HttpNotFound, HttpResponse, RefreshResponse
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -24,16 +30,11 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_crm.leads.filters import ScoringRuleFilter
 from horilla_crm.leads.forms import ScoringCriterionForm
 from horilla_crm.leads.models import ScoringCondition, ScoringCriterion, ScoringRule
-from horilla_generics.views import (
-    HorillaListView,
-    HorillaNavView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-    HorillaView,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class ScoringRuleNavbar(LoginRequiredMixin, HorillaNavView):
                 {
                     "action": _("Add Column to List"),
                     "attrs": f"""
-                            hx-get="{reverse_lazy('horilla_generics:column_selector')}?app_label={self.model_app_label}&model_name={self.model_name}&url_name={self.url_name}"
+                            hx-get="{reverse_lazy('generics:column_selector')}?app_label={self.model_app_label}&model_name={self.model_name}&url_name={self.url_name}"
                             onclick="openModal()"
                             hx-vals='{{"exclude":"is_active"}}'
                             hx-target="#modalBox"
@@ -238,6 +239,7 @@ class ScoringRuleDetailView(LoginRequiredMixin, DetailView):
     model = ScoringRule
 
     def get_context_data(self, **kwargs):
+        """Attach current rule details and criteria list for detail rendering."""
         context = super().get_context_data(**kwargs)
         current_obj = self.get_object()
         scoring_criteria = ScoringCriterion.objects.filter(rule=current_obj)
@@ -247,6 +249,7 @@ class ScoringRuleDetailView(LoginRequiredMixin, DetailView):
         return context
 
     def dispatch(self, request, *args, **kwargs):
+        """Handle missing rule gracefully, with HTMX refresh fallback."""
         try:
             self.object = self.get_object()
         except Exception as e:
@@ -350,6 +353,7 @@ class ScoringCriterionCreateUpdateView(LoginRequiredMixin, HorillaSingleFormView
         return kwargs
 
     def get_initial(self):
+        """Prefill selected rule from query params when creating criteria."""
         initial = super().get_initial()
         if not self.kwargs.get("pk"):
             obj = self.request.GET.get("obj") or self.request.POST.get("obj")

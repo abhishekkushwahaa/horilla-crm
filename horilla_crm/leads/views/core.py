@@ -5,27 +5,14 @@ from urllib.parse import urlencode
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Avg, Max, Min
-from django.utils.functional import cached_property  # type: ignore
+from django.utils.functional import cached_property
 
-from horilla.http import RedirectResponse
+from horilla.contrib.activity.views import HorillaActivitySectionView
 
 # First-party / Horilla imports
-from horilla.urls import reverse_lazy
-from horilla.utils.decorators import (
-    htmx_required,
-    method_decorator,
-    permission_required,
-    permission_required_or_denied,
-)
-from horilla.utils.translation import gettext_lazy as _
-from horilla_activity.views import HorillaActivitySectionView
-from horilla_cadences.views import CadenceRecordTabView
-from horilla_core.utils import is_owner
-from horilla_crm.leads.filters import LeadFilter
-from horilla_crm.leads.models import Lead, LeadStatus
-from horilla_generics.mixins import RecentlyViewedMixin  # type: ignore
-from horilla_generics.views import (
+from horilla.contrib.core.utils import is_owner
+from horilla.contrib.generics.mixins import RecentlyViewedMixin
+from horilla.contrib.generics.views import (
     HorillaCardView,
     HorillaChartView,
     HorillaDetailSectionView,
@@ -41,7 +28,21 @@ from horilla_generics.views import (
     HorillaSplitView,
     HorillaView,
 )
-from horilla_generics.views.timeline import HorillaTimelineView
+from horilla.contrib.generics.views.timeline import HorillaTimelineView
+from horilla.db.models import Avg, Count, Max, Min, Sum
+from horilla.http import RedirectResponse
+from horilla.urls import reverse_lazy
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
+from horilla_crm.leads.filters import LeadFilter
+from horilla_crm.leads.models import Lead, LeadStatus
 
 
 class LeadView(LoginRequiredMixin, HorillaView):
@@ -159,9 +160,6 @@ class LeadListView(LoginRequiredMixin, HorillaListView):
         "lead_owner",
         "industry",
         "lead_status",
-    ]
-    header_attrs = [
-        {"email": {"style": "width: 300px;"}, "title": {"style": "width: 200px;"}},
     ]
 
     @cached_property
@@ -558,8 +556,6 @@ class LeadChartView(LoginRequiredMixin, HorillaChartView):
         if group_by != "lead_status":
             return super().build_chart_payload(queryset, group_by, value_field)
 
-        from django.db.models import Count, Sum
-
         field = self.model._meta.get_field(group_by)
 
         # Decide aggregation: metric(value_field) or Count("pk")
@@ -618,7 +614,6 @@ class LeadChartView(LoginRequiredMixin, HorillaChartView):
         Drop final lead stages from stacked segments when lead_status is an axis.
         Supports optional numeric Y-axis (sum) while preserving this filtering.
         """
-        from django.db.models import Count, Sum
 
         if primary != "lead_status" and secondary != "lead_status":
             return super().build_stacked_payload(
@@ -890,6 +885,7 @@ class LeadsDetailViewTabView(LoginRequiredMixin, HorillaDetailTabView):
 
     def _prepare_detail_tabs(self):
         self.object_id = self.request.GET.get("object_id")
+        self.model = Lead
         if self.object_id:
             obj = Lead.objects.get(pk=self.object_id)
             if obj.is_convert:
@@ -902,7 +898,7 @@ class LeadsDetailViewTabView(LoginRequiredMixin, HorillaDetailTabView):
                 self.urls = {
                     "details": "leads:leads_details_tab",
                     "activity": "leads:lead_activity_detail_view",
-                    "cadences": "leads:lead_cadences_tab",
+                    "cadences": "cadences:lead_cadences_tab",
                     "related_lists": "leads:lead_related_lists",
                     "notes_attachments": "leads:leads_notes_attachments",
                     "history": "leads:leads_history_tab_view",
@@ -926,13 +922,6 @@ class LeadsActivityTabView(LoginRequiredMixin, HorillaActivitySectionView):
     permission_required_or_denied(["leads.view_lead", "leads.view_own_lead"]),
     name="dispatch",
 )
-class LeadCadenceTabView(CadenceRecordTabView):
-    """Cadence tab view for lead detail."""
-
-    app_label = "leads"
-    model_name = "Lead"
-
-
 @method_decorator(
     permission_required_or_denied(["leads.view_lead", "leads.view_own_lead"]),
     name="dispatch",

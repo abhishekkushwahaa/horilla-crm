@@ -3,6 +3,7 @@
 API URL configuration for the Horilla project,
 including dynamic path collection and Swagger schema.
 """
+
 # Standard library
 import logging
 
@@ -165,7 +166,7 @@ def get_app_verbose_name_from_view(view):
 
         # Extract app name from module path
         # Examples:
-        # 'horilla_activity.api.views' -> 'horilla_activity'
+        # 'activity.api.views' -> 'activity'
         parts = module_path.split(".")
 
         # Try to find matching app config by checking all installed apps

@@ -5,15 +5,25 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.utils.functional import cached_property  # type: ignore
+from django.utils.functional import cached_property
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView, View
 
+# First party / Horilla imports
 from horilla.auth.models import User
+from horilla.contrib.core.models import Company
+from horilla.contrib.core.progress import BASE_STEPS, ProgressStepsMixin
+from horilla.contrib.core.views.initialiaze_database import InitializeRoleView
+from horilla.contrib.generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaSingleFormView,
+    HorillaView,
+)
+from horilla.contrib.utils.middlewares import _thread_local
 from horilla.http import HttpNotFound, HttpResponse, JsonResponse
 from horilla.shortcuts import get_object_or_404, redirect, render
-
-# First party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -22,21 +32,12 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Company
-from horilla_core.progress import BASE_STEPS, ProgressStepsMixin
-from horilla_core.views.initialiaze_database import InitializeRoleView
+
+# First-party / Horilla apps
 from horilla_crm.leads.filters import LeadStatusFilter
-from horilla_crm.leads.forms import LeadStatusForm  # type: ignore
+from horilla_crm.leads.forms import LeadStatusForm
 from horilla_crm.leads.models import LeadStatus
 from horilla_crm.leads.signals import lead_stage_created
-from horilla_generics.views import (
-    HorillaListView,
-    HorillaNavView,
-    HorillaSingleDeleteView,
-    HorillaSingleFormView,
-    HorillaView,
-)
-from horilla_utils.middlewares import _thread_local
 
 # Local imports
 
@@ -199,6 +200,7 @@ class CreateLeadStage(LoginRequiredMixin, HorillaSingleFormView):
     form_class = LeadStatusForm
 
     def get_initial(self):
+        """Provide default stage order when creating a new lead stage."""
         initial = super().get_initial()
         if not self.kwargs.get("pk"):  # Only set initial order for new stages
             company = (
@@ -231,6 +233,7 @@ class ToggleOrderFieldView(LoginRequiredMixin, TemplateView):
     template_name = "lead_status/order_field.html"
 
     def get_context_data(self, **kwargs):
+        """Return template state for order-field visibility and default value."""
         context = super().get_context_data(**kwargs)
         is_final = self.request.POST.get("is_final") or self.request.GET.get("is_final")
         current_order_value = self.request.POST.get(

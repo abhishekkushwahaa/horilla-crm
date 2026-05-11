@@ -4,7 +4,7 @@ Serializers for horilla_crm.opportunities models
 
 from rest_framework import serializers
 
-from horilla_core.api.serializers import HorillaUserSerializer
+from horilla.contrib.core.api.serializers import HorillaUserSerializer
 from horilla_crm.opportunities.models import (
     DefaultOpportunityMember,
     Opportunity,

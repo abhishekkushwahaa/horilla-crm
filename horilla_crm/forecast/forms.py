@@ -11,11 +11,11 @@ from decimal import Decimal, InvalidOperation
 from django import forms
 
 from horilla.auth.models import User
+from horilla.contrib.generics.forms import HorillaModelForm
 
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_generics.forms import HorillaModelForm
 
 # Local application imports
 from .models import ForecastCondition, ForecastTarget, ForecastType

@@ -53,6 +53,13 @@ FEATURE_EXCLUDE_MODELS = {}
 # Format: {feature_name: bool}
 FEATURE_AUTO_REGISTER_ALL = {}
 
+# Buffer for models registered for a feature before the feature itself was registered
+# Format: {feature_name_or_registry_key: [model_class, ...]}
+FEATURE_PENDING_MODELS = defaultdict(list)
+
+# Reverse lookup: registry_key -> feature_name
+FEATURE_REGISTRY_KEY_TO_NAME = {}
+
 # Feature configuration: feature_name -> registry_key.
 # Core features: import_data, export_data, global_search. Apps add more via register_feature().
 FEATURE_CONFIG = {
@@ -77,7 +84,7 @@ def register_feature(
         feature_name: Feature name (e.g., "workflow", "notification")
         registry_key: Registry key in FEATURE_REGISTRY (defaults to "{feature_name}_models")
         exclude_app_label: App label(s) to exclude from auto-registration. Can be a single string
-                          (e.g. "horilla_duplicates") or a list (e.g. ["horilla_duplicates", "other_app"]).
+                          (e.g. "duplicates") or a list (e.g. ["duplicates", "other_app"]).
                           Only applied when explicitly passed; if omitted, no app is excluded.
         auto_register_all: If True, automatically register all models with all=True.
                           If False, only register models specified in include_models.
@@ -105,9 +112,9 @@ def register_feature(
         register_feature(
             "duplicate_data",
             "duplicate_models",
-            exclude_app_label="horilla_duplicates",
+            exclude_app_label="duplicates",
             include_models=[
-                ("horilla_core","User")
+                ("core","User")
             ]
         )
 
@@ -117,7 +124,7 @@ def register_feature(
             "notification_template_models",
             auto_register_all=True,
             exclude_models=[
-                ("horilla_core", "User"),  # Exclude this model
+                ("core", "User"),  # Exclude this model
             ],
 
         )
@@ -161,6 +168,7 @@ def register_feature(
         old_registry_key = FEATURE_CONFIG[feature_name]
 
         FEATURE_CONFIG[feature_name] = registry_key
+        FEATURE_REGISTRY_KEY_TO_NAME[registry_key] = feature_name
         FEATURE_AUTO_REGISTER_ALL[feature_name] = auto_register_all
 
         # If switching to selective registration, clear existing models from registry
@@ -257,6 +265,7 @@ def register_feature(
         return False
 
     FEATURE_CONFIG[feature_name] = registry_key
+    FEATURE_REGISTRY_KEY_TO_NAME[registry_key] = feature_name
     FEATURE_AUTO_REGISTER_ALL[feature_name] = auto_register_all
 
     FEATURE_EXCLUDE_APP_EXPLICIT[feature_name] = explicit_exclude_app
@@ -443,6 +452,20 @@ def register_feature(
                 feature_name,
             )
 
+    # Flush any models buffered before this feature was registered
+    # They may be keyed by feature_name or registry_key depending on what was passed
+    pending = FEATURE_PENDING_MODELS.pop(feature_name, []) + FEATURE_PENDING_MODELS.pop(
+        registry_key, []
+    )
+    for model_class in pending:
+        if model_class not in FEATURE_REGISTRY[registry_key]:
+            FEATURE_REGISTRY[registry_key].append(model_class)
+            logger.info(
+                "Flushed pending model %s for feature '%s'",
+                model_class,
+                feature_name,
+            )
+
     # Then, auto-register all=True models if enabled
     if auto_register_all:
         # Get excluded models for this feature
@@ -511,7 +534,7 @@ def register_model_for_feature(
 
     Args:
         model_class: Model class (optional if app_label/model_name provided)
-        app_label: App label (e.g., "horilla_core")
+        app_label: App label (e.g., "core")
         model_name: Model name (e.g., "User")
         features: Feature name(s) as list or string
         all: Enable all features if True
@@ -520,12 +543,12 @@ def register_model_for_feature(
 
     Example:
         register_model_for_feature(
-            app_label="horilla_core",
+            app_label="core",
             model_name="User",
             features=["global_search"]
         )
         register_model_for_feature(
-            app_label="horilla_calendar",
+            app_label="calendar",
             model_name="Event",
             all=True
         )
@@ -559,6 +582,7 @@ def register_model_for_feature(
 
     # Determine which features to enable
     enabled_features = set()
+    explicit_features = set()  # features explicitly requested via features= parameter
     exclude_set = set()
 
     # Handle 'all' flag - enable all features
@@ -577,6 +601,7 @@ def register_model_for_feature(
         if isinstance(features, str):
             features = [features]
         enabled_features.update(features)
+        explicit_features.update(features)
 
     # Legacy way: check boolean keyword arguments
     legacy_features = {
@@ -613,18 +638,31 @@ def register_model_for_feature(
     # Register model for each enabled feature
     registered = False
     for feature_name in enabled_features:
+        # Allow callers to pass the registry key (e.g. "duplicate_models") instead of
+        # the feature name (e.g. "duplicate_data") — resolve it transparently
+        if (
+            feature_name not in FEATURE_CONFIG
+            and feature_name in FEATURE_REGISTRY_KEY_TO_NAME
+        ):
+            resolved = FEATURE_REGISTRY_KEY_TO_NAME[feature_name]
+            if feature_name in explicit_features:
+                explicit_features.add(resolved)
+            feature_name = resolved
+
         if feature_name in FEATURE_CONFIG:
 
             if not FEATURE_AUTO_REGISTER_ALL.get(feature_name, True):
-                included_models = FEATURE_INCLUDE_MODELS.get(feature_name, [])
-                if model_class not in included_models:
-                    logger.debug(
-                        "Skipped model %s.%s for selective feature '%s' (not in include_models)",
-                        app_label,
-                        model_name,
-                        feature_name,
-                    )
-                    continue
+                # Explicitly requested features always bypass the include_models gate
+                if feature_name not in explicit_features:
+                    included_models = FEATURE_INCLUDE_MODELS.get(feature_name, [])
+                    if model_class not in included_models:
+                        logger.debug(
+                            "Skipped model %s.%s for selective feature '%s' (not in include_models)",
+                            app_label,
+                            model_name,
+                            feature_name,
+                        )
+                        continue
 
             registry_key = FEATURE_CONFIG[feature_name]
 
@@ -645,12 +683,13 @@ def register_model_for_feature(
                     feature_name,
                 )
         else:
-            logger.warning(
-                "Unknown feature '%s' for model %s.%s. Make sure to register it using register_feature('%s')",
+            if model_class not in FEATURE_PENDING_MODELS[feature_name]:
+                FEATURE_PENDING_MODELS[feature_name].append(model_class)
+            logger.debug(
+                "Feature '%s' not yet registered; buffered model %s.%s for later registration",
                 feature_name,
                 app_label,
                 model_name,
-                feature_name,
             )
 
     return registered
@@ -673,14 +712,14 @@ def register_models_for_feature(
     Example:
         register_models_for_feature(
             models=[
-                ("horilla_core", "User"),
-                ("horilla_activity", "Activity"),
-                ("horilla_calendar", "Event"),
+                ("core", "User"),
+                ("activity", "Activity"),
+                ("calendar", "Event"),
             ],
             features=["global_search", "import_data"]
         )
         register_models_for_feature(
-            models=[("horilla_core", "User"), ("horilla_activity", "Activity")],
+            models=[("core", "User"), ("activity", "Activity")],
             all=True,
             exclude=["export_data"]
         )

@@ -1,6 +1,6 @@
 [
     {
-        "model": "horilla_reports.reportfolder",
+        "model": "reports.reportfolder",
         "pk": 1,
         "fields": {
             "name": "Default Reports",
@@ -8,7 +8,7 @@
         }
     },
     {
-        "model": "horilla_reports.reportfolder",
+        "model": "reports.reportfolder",
         "pk": 3,
         "fields": {
             "name": "Opportunity Folder",
@@ -17,7 +17,7 @@
     },
 
     {
-        "model": "horilla_reports.report",
+        "model": "reports.report",
         "fields": {
             "name": "Opportunities by Stage",
             "module": {
@@ -37,7 +37,7 @@
         }
     },
     {
-        "model": "horilla_reports.report",
+        "model": "reports.report",
         "fields": {
             "name": "Opportunities by Source",
             "module": {

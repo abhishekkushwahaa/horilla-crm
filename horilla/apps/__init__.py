@@ -27,7 +27,7 @@ class AppLauncher(AppConfig):
 
     # ===== Optional Configurations (Override in child) =====
     url_prefix = None  # e.g. "dashboard/"
-    url_module = None  # e.g. "horilla_dashboard.urls"
+    url_module = None  # e.g. "horilla.contrib.dashboard.urls"
     url_namespace = None  # Optional namespace
 
     js_files = None  # str or list of static paths, e.g. "app_name/assets/js/file.js"

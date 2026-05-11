@@ -22,7 +22,7 @@ from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
-import horilla_notifications.routing
+import horilla.contrib.notifications.routing
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "horilla.settings")
 
@@ -30,7 +30,7 @@ application = ProtocolTypeRouter(
     {
         "http": get_asgi_application(),
         "websocket": AuthMiddlewareStack(
-            URLRouter(horilla_notifications.routing.websocket_urlpatterns)
+            URLRouter(horilla.contrib.notifications.routing.websocket_urlpatterns)
         ),
     }
 )

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Forms for managing campaigns and campaign members.
 Includes multi-step campaign forms, member assignment forms, and child campaign selection forms.
 Handles dynamic field visibility and validation to maintain campaign integrity.
@@ -7,11 +7,12 @@ Handles dynamic field visibility and validation to maintain campaign integrity.
 # Third-party imports (Django)
 from django import forms
 
+from horilla.contrib.core.mixins import OwnerQuerysetMixin
+from horilla.contrib.generics.forms import HorillaModelForm, HorillaMultiStepForm
+
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.mixins import OwnerQuerysetMixin
-from horilla_generics.forms import HorillaModelForm, HorillaMultiStepForm
 
 # Local imports
 from .models import Campaign, CampaignMember
@@ -94,7 +95,7 @@ class CampaignMemberForm(HorillaModelForm):
             "member_type": forms.Select(
                 attrs={
                     "class": "form-select",
-                    "hx-get": "/campaigns/add-campaign-members/",
+                    "hx-get": reverse_lazy("campaigns:add_campaign_members"),
                     "hx-trigger": "change",
                     "hx-target": "#campaignmember-form-view-container",
                     "hx-include": "#id_campaign",
@@ -110,11 +111,16 @@ class CampaignMemberForm(HorillaModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.fields["member_type"].widget.attrs.update(
-                {"hx-get": f"/campaigns/edit-added-campaign-members/{self.instance.pk}"}
+                {
+                    "hx-get": reverse_lazy(
+                        "campaigns:edit_added_campaign_members",
+                        kwargs={"pk": self.instance.pk},
+                    )
+                }
             )
         else:
             self.fields["member_type"].widget.attrs.update(
-                {"hx-get": "/campaigns/add-campaign-members"}
+                {"hx-get": reverse_lazy("campaigns:add_campaign_members")}
             )
 
         member_type = self.data.get("member_type") or self.initial.get("member_type")
@@ -127,6 +133,7 @@ class CampaignMemberForm(HorillaModelForm):
             self.fields["lead"].widget = forms.HiddenInput()
 
     def save(self, commit=True):
+        """Persist member type to model field before saving."""
         instance = super().save(commit=False)
         instance.type = self.cleaned_data["member_type"]
         if commit:
@@ -147,7 +154,7 @@ class ChildCampaignForm(forms.Form):
                 "class": "select2-pagination w-full text-sm",
                 "data-placeholder": "Select Campaign",
                 "data-url": reverse_lazy(
-                    "horilla_generics:model_select2",
+                    "generics:model_select2",
                     kwargs={"app_label": "campaigns", "model_name": "Campaign"},
                 ),
                 "data-field-name": "campaign",
@@ -236,6 +243,7 @@ class ChildCampaignForm(forms.Form):
         return campaign
 
     def clean(self):
+        """Validate that a campaign selection is present in form data."""
         cleaned_data = super().clean()
         campaign = cleaned_data.get("campaign")
 
